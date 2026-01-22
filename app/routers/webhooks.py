@@ -1,8 +1,13 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
+from sqlalchemy.orm import Session
 import hmac
 import hashlib
+import re
 from app.config import settings
-import json
+from app.services.github import get_installation_client
+from app.models import User, APIKey
+from app.database import get_db
+from app.services.review import perform_review
 
 router = APIRouter()
 
@@ -21,7 +26,7 @@ def verify_signature(payload, signature_header) -> bool:
     return True
 
 @router.post("/github")
-async def github_webhook(req: Request):
+async def github_webhook(req: Request, db: Session = Depends(get_db)):
     signature = req.headers.get("X-Hub-Signature-256")
     
     payload = await req.body()
@@ -32,25 +37,65 @@ async def github_webhook(req: Request):
     event = req.headers.get("X-Github-Event")
     data = await req.json()
     
-    print(f"Received event: {event}")
-    print(f"Action: {data.get('action')}")
-
-    print(f"Data JSON: {json.dumps(data, indent=2)}")
+    installation_id = data["installation"]["id"]
+    sender_username = data["sender"]["login"]
+    
+    print(f"Event: {event}, Action: {data.get('action')}, User: {sender_username}")
     
     if event == "pull_request" and data.get("action") == "opened":
-        # TODO: Trigger review
-        pr_number = data["pull_request"]["number"]
-        repo_name = data["repository"]["full_name"]
-        print(f"PR #{pr_number} opened in {repo_name}")
-        return {"status": "review_queued"}
+        pr_number=data["pull_request"]["number"]
+        repo_name=data["repository"]["full_name"]
+        
+        user = db.query(User).filter(User.github_username == sender_username).first()
+        
+        if not user:
+            user = User(github_username=sender_username)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        api_key = db.query(APIKey).filter(APIKey.user_id == user.id).first()
+        if not api_key:
+            gh = get_installation_client()
+            repo = gh.get_repo(repo_name)
+            pr = repo.get_pull(pr_number)
+            pr.create_issue_comment(
+                "⚠️ **Lynx Review Not Configured**\n\n"
+                "Please set up your OpenAI or Gemini API key to enable code reviews.\n\n"
+                "👉 Go to: http://localhost:8000/settings\n\n"
+                "Once configured, comment `/review` on this PR to trigger a review."
+            )
+            return {"status": "api_key_missing"}
+
+        perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, llm_provider=api_key.provider, api_key=api_key)
+
+        return {"status": "review_posted"}
     
     elif event == "issue_comment" and data.get("action") == "created":
         comment_body = data["comment"]["body"].strip()
-        if comment_body.startswith("/review"):
-            # TODO: Trigger review
+        if re.match(r"^/review\b", comment_body, re.IGNORECASE):
             pr_number = data["issue"]["number"]
             repo_name = data["repository"]["full_name"]
-            print(f"/review triggered on PR #{pr_number} in {repo_name}")
-            return {"status": "review_queued"}
-    
-    return {"status": "ignored"}
+            
+            user = db.query(User).filter(User.github_username == sender_username).first()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            api_key = db.query(APIKey).filter(APIKey.user_id == user.id).first()
+            if not api_key:
+                gh = get_installation_client()
+                repo = gh.get_repo(repo_name)
+                pr = repo.get_pull(pr_number)
+                pr.create_issue_comment(
+                    "⚠️ **Lynx Review Not Configured**\n\n"
+                    "Please set up your OpenAI or Gemini API key to enable code reviews.\n\n"
+                    "👉 Go to: http://localhost:8000/settings\n\n"
+                    "Once configured, comment `/review` on this PR to trigger a review."
+                )
+                return {"status": "api_key_missing"}
+
+            perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, llm_provider=api_key.provider, api_key=api_key)
+
+            return {"status": "review_posted"}
+            
+    return {"status": "event_ignored"}
