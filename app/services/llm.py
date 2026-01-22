@@ -22,7 +22,7 @@ Here's the diff:
 Provide your review:"""
 
 
-async def get_review(diff: str, provider: str, api_key: str) -> str:
+def get_review(diff: str, provider: str, api_key: str) -> str:
     """Call LLM to get code review based on the provided diff"""
     prompt = REVIEW_PROMPT.format(diff=diff)
     
@@ -56,7 +56,7 @@ def get_gemini_review(prompt: str, api_key: str) -> str:
     try:
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
-            model="",
+            model="gemini-3-flash-preview",
             contents=prompt,
             
         )
