@@ -49,25 +49,9 @@ async def github_webhook(req: Request, db: Session = Depends(get_db)):
         user = db.query(User).filter(User.github_username == sender_username).first()
         
         if not user:
-            user = User(github_username=sender_username)
-            db.add(user)
-            db.commit()
-            db.refresh(user)
+            raise HTTPException(status_code=404, detail="User not found")
         
-        api_key = db.query(APIKey).filter(APIKey.user_id == user.id).first()
-        if not api_key:
-            gh = get_installation_client()
-            repo = gh.get_repo(repo_name)
-            pr = repo.get_pull(pr_number)
-            pr.create_issue_comment(
-                "⚠️ **Lynx Review Not Configured**\n\n"
-                "Please set up your OpenAI or Gemini API key to enable code reviews.\n\n"
-                "👉 Go to: http://localhost:8000/settings\n\n"
-                "Once configured, comment `/review` on this PR to trigger a review."
-            )
-            return {"status": "api_key_missing"}
-
-        perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, llm_provider=api_key.provider, api_key=api_key)
+        perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, user_id=user.id, db=db)
 
         return {"status": "review_posted"}
     
@@ -80,21 +64,8 @@ async def github_webhook(req: Request, db: Session = Depends(get_db)):
             user = db.query(User).filter(User.github_username == sender_username).first()
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
-            
-            api_key = db.query(APIKey).filter(APIKey.user_id == user.id).first()
-            if not api_key:
-                gh = get_installation_client()
-                repo = gh.get_repo(repo_name)
-                pr = repo.get_pull(pr_number)
-                pr.create_issue_comment(
-                    "⚠️ **Lynx Review Not Configured**\n\n"
-                    "Please set up your OpenAI or Gemini API key to enable code reviews.\n\n"
-                    "👉 Go to: http://localhost:8000/settings\n\n"
-                    "Once configured, comment `/review` on this PR to trigger a review."
-                )
-                return {"status": "api_key_missing"}
 
-            perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, llm_provider=api_key.provider, api_key=api_key)
+            perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, user_id=user.id, db=db)
 
             return {"status": "review_posted"}
             

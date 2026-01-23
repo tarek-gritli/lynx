@@ -1,5 +1,7 @@
 from openai import OpenAI
 from google import genai
+from anthropic import Anthropic
+
 REVIEW_PROMPT = """You are a code reviewer. Analyze this pull request diff and provide a concise review.
 
 Focus on:
@@ -30,6 +32,8 @@ def get_review(diff: str, provider: str, api_key: str) -> str:
         return get_openai_review(prompt, api_key)
     elif provider == "gemini":
         return get_gemini_review(prompt, api_key)
+    elif provider == "claude":
+        return get_claude_review(prompt, api_key)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
@@ -64,3 +68,21 @@ def get_gemini_review(prompt: str, api_key: str) -> str:
         raise RuntimeError(f"Gemini request failed {e}") from e
     
     return response.text.strip()
+
+def get_claude_review(prompt: str, api_key: str) -> str:
+    try:
+        client = Anthropic(api_key=api_key)
+        
+        response = client.messages.create(
+            model="claude-opus-4-5",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+    except Exception as e:
+        raise RuntimeError(f"Claude request failed {e}") from e
+    
+    return response.content[0].text.strip()
