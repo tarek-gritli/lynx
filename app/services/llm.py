@@ -81,7 +81,8 @@ def get_claude_review(prompt: str, api_key: str) -> str:
                     "role": "user",
                     "content": prompt
                 }
-            ]
+            ],
+            max_tokens=1024
         )
     except Exception as e:
         raise RuntimeError(f"Claude request failed {e}") from e
