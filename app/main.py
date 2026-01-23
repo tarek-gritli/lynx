@@ -1,13 +1,15 @@
 from fastapi import FastAPI
 
-from .routers import webhooks
+from .routers import webhooks, auth
 from .database import engine
 from .models import Base
 
-Base.metadata.create_all(bind=engine)
+#Base.metadata.drop_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Lynx")
 
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 
 @app.get("/")
