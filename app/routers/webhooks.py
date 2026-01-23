@@ -1,11 +1,10 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 import hmac
 import hashlib
 import re
 from app.config import settings
-from app.services.github import get_installation_client
-from app.models import User, APIKey
+from app.models import User
 from app.database import get_db
 from app.services.review import perform_review
 
@@ -26,7 +25,7 @@ def verify_signature(payload, signature_header) -> bool:
     return True
 
 @router.post("/github")
-async def github_webhook(req: Request, db: Session = Depends(get_db)):
+async def github_webhook(req: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     signature = req.headers.get("X-Hub-Signature-256")
     
     payload = await req.body()
@@ -51,9 +50,16 @@ async def github_webhook(req: Request, db: Session = Depends(get_db)):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, user_id=user.id, db=db)
+        background_tasks.add_task(
+            perform_review,
+            installation_id=installation_id,
+            repo_name=repo_name,
+            pr_number=pr_number,
+            user_id=user.id,
+            db=db
+        )
 
-        return {"status": "review_posted"}
+        return {"status": "queued for review"}
     
     elif event == "issue_comment" and data.get("action") == "created":
         comment_body = data["comment"]["body"].strip()
@@ -65,8 +71,15 @@ async def github_webhook(req: Request, db: Session = Depends(get_db)):
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
 
-            perform_review(installation_id=installation_id, repo_name=repo_name, pr_number=pr_number, user_id=user.id, db=db)
+            background_tasks.add_task(
+                perform_review,
+                installation_id=installation_id,
+                repo_name=repo_name,
+                pr_number=pr_number,
+                user_id=user.id,
+                db=db
+            )
 
-            return {"status": "review_posted"}
+            return {"status": "queued for review"}
             
     return {"status": "event_ignored"}
