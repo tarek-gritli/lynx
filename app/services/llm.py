@@ -70,6 +70,7 @@ def get_gemini_review(prompt: str, api_key: str) -> str:
     return response.text.strip()
 
 def get_claude_review(prompt: str, api_key: str) -> str:
+    """Get review from claude"""
     try:
         client = Anthropic(api_key=api_key)
         

@@ -8,6 +8,8 @@ from app.utils.crypto import encrypt_api_key
 
 router = APIRouter()
 
+SUPPORTED_PROVIDERS = ["openai", "gemini", "claude"]
+
 class SetAPIKeyRequest(BaseModel):
     provider: str
     api_key: str
@@ -19,7 +21,7 @@ def set_api_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if req.provider not in ["openai", "gemini"]:
+    if req.provider not in SUPPORTED_PROVIDERS:
         raise HTTPException(status_code=400, detail="Unsupported provider")
 
     encrypted = encrypt_api_key(req.api_key)
@@ -48,7 +50,7 @@ def delete_api_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if req.provider not in ["openai", "gemini"]:
+    if req.provider not in SUPPORTED_PROVIDERS:
         raise HTTPException(status_code=400, detail="Unsupported provider")
     
     existing = db.query(APIKey).filter(APIKey.user_id == current_user.id, APIKey.provider == req.provider).first()
