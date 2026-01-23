@@ -28,16 +28,24 @@ def get_review(diff: str, provider: str, api_key: str) -> str:
     """Call LLM to get code review based on the provided diff"""
     prompt = REVIEW_PROMPT.format(diff=diff)
     
+    review: str | None = None
+    
     if provider == "openai":
-        return get_openai_review(prompt, api_key)
+        review = get_openai_review(prompt, api_key)
     elif provider == "gemini":
-        return get_gemini_review(prompt, api_key)
+        review = get_gemini_review(prompt, api_key)
     elif provider == "claude":
-        return get_claude_review(prompt, api_key)
+        review = get_claude_review(prompt, api_key)
     else:
         raise ValueError(f"Unknown provider: {provider}")
+    
+    if not review:
+        raise RuntimeError(f"{provider} returned empty response")
+    
+    
+    return review.strip()
 
-def get_openai_review(prompt: str, api_key: str) -> str:
+def get_openai_review(prompt: str, api_key: str) -> str | None:
     """Get review from openai""" 
     try:
         client = OpenAI(api_key=api_key)
@@ -53,9 +61,9 @@ def get_openai_review(prompt: str, api_key: str) -> str:
     except Exception as e:
         raise RuntimeError(f"OpenAI request failed {e}") from e
     
-    return response.choices[0].message.content.strip()
+    return response.choices[0].message.content
     
-def get_gemini_review(prompt: str, api_key: str) -> str:
+def get_gemini_review(prompt: str, api_key: str) -> str | None:
     """Get review from gemini"""
     try:
         client = genai.Client(api_key=api_key)
@@ -67,9 +75,9 @@ def get_gemini_review(prompt: str, api_key: str) -> str:
     except Exception as e:
         raise RuntimeError(f"Gemini request failed {e}") from e
     
-    return response.text.strip()
+    return response.text
 
-def get_claude_review(prompt: str, api_key: str) -> str:
+def get_claude_review(prompt: str, api_key: str) -> str | None:
     """Get review from claude"""
     try:
         client = Anthropic(api_key=api_key)
@@ -87,4 +95,6 @@ def get_claude_review(prompt: str, api_key: str) -> str:
     except Exception as e:
         raise RuntimeError(f"Claude request failed {e}") from e
     
-    return response.content[0].text.strip()
+    if not response.content:
+        return None
+    return response.content[0].text
