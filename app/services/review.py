@@ -45,6 +45,7 @@ def perform_review(
             review_text = get_review(
                 diff=diff,
                 provider=api_key.provider,
+                model=api_key.model,
                 api_key=decrypted_api_key
             )
             reviews.append({

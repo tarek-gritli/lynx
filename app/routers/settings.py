@@ -12,6 +12,7 @@ SUPPORTED_PROVIDERS = ["openai", "gemini", "claude"]
 
 class SetAPIKeyRequest(BaseModel):
     provider: str
+    model: str
     api_key: str
 
 
@@ -34,7 +35,8 @@ def set_api_key(
         new_key = APIKey(
             user_id = current_user.id,
             encrypted_key = encrypted,
-            provider = req.provider
+            provider = req.provider,
+            model = req.model
         )
         db.add(new_key)
     db.commit()

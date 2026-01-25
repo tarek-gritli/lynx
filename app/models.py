@@ -25,6 +25,7 @@ class APIKey(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     encrypted_key = Column(Text, nullable=False)
     provider = Column(String, nullable=False)
+    model = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     user = relationship("User", back_populates="api_keys")

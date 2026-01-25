@@ -24,18 +24,18 @@ Here's the diff:
 Provide your review:"""
 
 
-def get_review(diff: str, provider: str, api_key: str) -> str:
+def get_review(diff: str, provider: str, model: str, api_key: str) -> str:
     """Call LLM to get code review based on the provided diff"""
     prompt = REVIEW_PROMPT.format(diff=diff)
     
     review: str | None = None
     
     if provider == "openai":
-        review = get_openai_review(prompt, api_key)
+        review = get_openai_review(prompt, model, api_key)
     elif provider == "gemini":
-        review = get_gemini_review(prompt, api_key)
+        review = get_gemini_review(prompt, model, api_key)
     elif provider == "claude":
-        review = get_claude_review(prompt, api_key)
+        review = get_claude_review(prompt, model, api_key)
     else:
         raise ValueError(f"Unknown provider: {provider}")
     
@@ -45,12 +45,12 @@ def get_review(diff: str, provider: str, api_key: str) -> str:
     
     return review.strip()
 
-def get_openai_review(prompt: str, api_key: str) -> str | None:
+def get_openai_review(prompt: str, model: str, api_key: str) -> str | None:
     """Get review from openai""" 
     try:
         client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
-            model="gpt-5",
+            model=model,
             messages=[
                 {"role": "system", "content": "You are an expert code reviewer."},
                 {"role": "user", "content": prompt}
@@ -63,12 +63,12 @@ def get_openai_review(prompt: str, api_key: str) -> str | None:
     
     return response.choices[0].message.content
     
-def get_gemini_review(prompt: str, api_key: str) -> str | None:
+def get_gemini_review(prompt: str, model: str, api_key: str) -> str | None:
     """Get review from gemini"""
     try:
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
-            model="gemini-3-flash-preview",
+            model=model,
             contents=prompt,
             
         )
@@ -77,13 +77,13 @@ def get_gemini_review(prompt: str, api_key: str) -> str | None:
     
     return response.text
 
-def get_claude_review(prompt: str, api_key: str) -> str | None:
+def get_claude_review(prompt: str, model: str, api_key: str) -> str | None:
     """Get review from claude"""
     try:
         client = Anthropic(api_key=api_key)
         
         response = client.messages.create(
-            model="claude-opus-4-5",
+            model=model,
             messages=[
                 {
                     "role": "user",
