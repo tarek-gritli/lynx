@@ -1,4 +1,28 @@
 services:
+  lynx-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lynx-backend
+    environment:
+      DATABASE_URL: postgresql://lynx:lynx@postgres:5432/lynx
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_PRIVATE_KEY_PATH: /app/github-app-key.pem
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ENVIRONMENT: ${ENVIRONMENT}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      BACKEND_URL: ${BACKEND_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    volumes:
+      - ./github-app.private-key.pem:/app/github-app-key.pem:ro
   postgres:
     image: postgres:15
     container_name: lynx-db
