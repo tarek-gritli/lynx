@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     gitlab_client_id: str
     gitlab_client_secret: str
     gitlab_url: str = "https://gitlab.com"
+    gitlab_webhook_secret: str
     database_url: str
     encryption_key: str
     jwt_secret: str

@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException, Request, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 import hmac
@@ -10,7 +11,7 @@ from app.services.review import perform_review
 
 router = APIRouter()
 
-def verify_signature(payload, signature_header) -> bool:
+def verify_github_signature(payload, signature_header) -> bool:
     """Verify GitHub webhook signature"""
     if not signature_header:
         raise HTTPException(status_code=403, detail="Missing signature header")
@@ -24,14 +25,24 @@ def verify_signature(payload, signature_header) -> bool:
     
     return True
 
+def verify_gitlab_token(token: str) -> bool:
+    """Verify GitLab webhook token"""
+    if not token:
+        raise HTTPException(status_code=403, detail="Missing GitLab token")
+
+    if not hmac.compare_digest(token, settings.gitlab_webhook_secret):
+        raise HTTPException(status_code=403, detail="Invalid GitLab token")
+
+    return True
+
 @router.post("/github")
 async def github_webhook(req: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Handle GitHub webhook events"""
     signature = req.headers.get("X-Hub-Signature-256")
     
     payload = await req.body()
     
-    
-    verify_signature(payload, signature)
+    verify_github_signature(payload, signature)
     
     event = req.headers.get("X-Github-Event")
     data = await req.json()
@@ -52,11 +63,12 @@ async def github_webhook(req: Request, background_tasks: BackgroundTasks, db: Se
         
         background_tasks.add_task(
             perform_review,
-            installation_id=installation_id,
             repo_name=repo_name,
             pr_number=pr_number,
             user_id=user.id,
-            db=db
+            db=db,
+            platform="github",
+            installation_id=installation_id,
         )
 
         return {"status": "queued for review"}
@@ -73,11 +85,72 @@ async def github_webhook(req: Request, background_tasks: BackgroundTasks, db: Se
 
             background_tasks.add_task(
                 perform_review,
-                installation_id=installation_id,
                 repo_name=repo_name,
                 pr_number=pr_number,
                 user_id=user.id,
-                db=db
+                db=db,
+                platform="github",
+                installation_id=installation_id,
+            )
+
+            return {"status": "queued for review"}
+            
+    return {"status": "event_ignored"}
+
+@router.post("/gitlab")
+async def gitlab_webhook(req: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Handle GitLab webhook events"""
+    token = req.headers.get("X-Gitlab-Token")
+    
+    verify_gitlab_token(token)
+
+    data = await req.json()
+    
+    sender_username = data["user"]["username"]
+    event_type = data.get("event_type")
+    object_attributes = data.get("object_attributes", {})
+    action = object_attributes.get("action")
+    
+    
+    print(f"Event: {event_type}, Action: {action}, User: {sender_username}")
+    
+    if event_type == "merge_request" and action == "open":
+        mr_number = object_attributes.get("iid")
+        repo_name = data["project"]["path_with_namespace"]
+        
+        user = db.query(User).filter(User.gitlab_username == sender_username).first()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        background_tasks.add_task(
+            perform_review,
+            repo_name=repo_name,
+            pr_number=mr_number,
+            user_id=user.id,
+            db=db,
+            platform="gitlab",
+        )
+
+        return {"status": "queued for review"}
+    
+    elif event_type == "note" and object_attributes.get("noteable_type") == "MergeRequest":
+        comment_body = object_attributes.get("note", "").strip()
+        if re.match(r"^/review\b", comment_body, re.IGNORECASE):
+            mr_number = data["merge_request"]["iid"]
+            repo_name = data["project"]["path_with_namespace"]
+            
+            user = db.query(User).filter(User.gitlab_username == sender_username).first()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            background_tasks.add_task(
+                perform_review,
+                repo_name=repo_name,
+                pr_number=mr_number,
+                user_id=user.id,
+                db=db,
+                platform="gitlab",
             )
 
             return {"status": "queued for review"}
