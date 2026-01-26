@@ -36,6 +36,8 @@ def set_api_key(
     
     if existing:
         existing.encrypted_key = encrypted
+        if req.model and req.model != existing.model:
+            existing.model = req.model
     else:
         new_key = APIKey(
             user_id = current_user.id,
