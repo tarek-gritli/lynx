@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.utils.crypto import encrypt_key
 
 router = APIRouter()
 
@@ -192,10 +193,20 @@ async def gitlab_callback(code: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Failed to get access token from GitLab")
     
     token_data = token_response.json()
+
     access_token = token_data.get("access_token")
+    refresh_token = token_data.get("refresh_token")
+    expires_in = token_data.get("expires_in")
     
     if not access_token:
         raise HTTPException(status_code=400, detail="No access token received from GitLab")
+    
+    token_expires_at = None
+    if expires_in:
+        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+    
+    encrypted_access_token = encrypt_key(access_token)
+    encrypted_refresh_token = encrypt_key(refresh_token) if refresh_token else None
     
     async with httpx.AsyncClient() as client:
         user_response = await client.get(
@@ -218,26 +229,47 @@ async def gitlab_callback(code: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.gitlab_id == gitlab_id).first()
     
     if user:
+        user.gitlab_access_token = encrypted_access_token
+        user.gitlab_refresh_token = encrypted_refresh_token
+        user.gitlab_token_expires_at = token_expires_at
         if user.gitlab_username != gitlab_username or user.gitlab_image_url != gitlab_image_url or user.email != email:
             user.gitlab_username = gitlab_username
             user.gitlab_image_url = gitlab_image_url
             if email:
                 user.email = email
-            db.commit()
+        db.commit()
     elif email:
         user = db.query(User).filter(User.email == email).first()
         if user:
             user.gitlab_id = gitlab_id
             user.gitlab_username = gitlab_username
             user.gitlab_image_url = gitlab_image_url
+            user.gitlab_access_token = encrypted_access_token
+            user.gitlab_refresh_token = encrypted_refresh_token
+            user.gitlab_token_expires_at = token_expires_at
             db.commit()
         else:
-            user = User(gitlab_id=gitlab_id, gitlab_username=gitlab_username, gitlab_image_url=gitlab_image_url, email=email)
+            user = User(
+                gitlab_id=gitlab_id,
+                gitlab_username=gitlab_username,
+                gitlab_image_url=gitlab_image_url,
+                email=email,
+                gitlab_access_token=encrypted_access_token,
+                gitlab_refresh_token=encrypted_refresh_token,
+                gitlab_token_expires_at=token_expires_at,
+            )
             db.add(user)
             db.commit()
             db.refresh(user)
     else:
-        user = User(gitlab_id=gitlab_id, gitlab_username=gitlab_username, gitlab_image_url=gitlab_image_url)
+        user = User(
+            gitlab_id=gitlab_id,
+            gitlab_username=gitlab_username,
+            gitlab_image_url=gitlab_image_url,
+            gitlab_access_token=encrypted_access_token,
+            gitlab_refresh_token=encrypted_refresh_token,
+            gitlab_token_expires_at=token_expires_at,
+        )
         db.add(user)
         db.commit()
         db.refresh(user)

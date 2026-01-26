@@ -15,6 +15,9 @@ class User(Base):
     gitlab_id = Column(Integer, unique=True, index=True, nullable=True)
     gitlab_username = Column(String, unique=True, index=True, nullable=True)
     gitlab_image_url = Column(String, nullable=True)
+    gitlab_access_token = Column(Text, nullable=True)
+    gitlab_refresh_token = Column(Text, nullable=True)
+    gitlab_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     
     email = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
