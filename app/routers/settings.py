@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from app.models import User, APIKey
 from app.database import get_db
 from .auth import get_current_user
-from app.utils.crypto import encrypt_api_key
+from app.utils.crypto import encrypt_key
 from app.services.validation import validate_api_key
 
 router = APIRouter()
@@ -30,7 +30,7 @@ def set_api_key(
     if not is_valid:
         raise HTTPException(status_code=400, detail=f"Invalid API key: {message}")
 
-    encrypted = encrypt_api_key(req.api_key)
+    encrypted = encrypt_key(req.api_key)
     
     existing = db.query(APIKey).filter(APIKey.user_id == current_user.id, APIKey.provider == req.provider).first()
     
