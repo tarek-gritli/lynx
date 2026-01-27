@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, Response
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
+
 import httpx
 import jwt
-from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
@@ -23,7 +24,9 @@ GITLAB_USER_URL = f"{settings.gitlab_url}/api/v4/user"
 COOKIE_NAME = "lynx_token"
 
 
-def create_access_token(data: dict, expires_delta: timedelta = timedelta(days=7)) -> str:
+def create_access_token(
+    data: dict, expires_delta: timedelta = timedelta(days=7)
+) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
@@ -40,11 +43,11 @@ def get_current_user(
         status_code=401,
         detail="Could not validate credentials",
     )
-    
+
     token = request.cookies.get(COOKIE_NAME)
     if not token:
         raise credentials_exception
-    
+
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
         user_id: str = payload.get("sub")
@@ -52,11 +55,11 @@ def get_current_user(
             raise credentials_exception
     except jwt.PyJWTError:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
         raise credentials_exception
-    
+
     return user
 
 
@@ -85,16 +88,16 @@ async def github_callback(code: str, db: Session = Depends(get_db)):
             },
             headers={"Accept": "application/json"},
         )
-    
+
     if token_response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to get access token")
-    
+
     token_data = token_response.json()
     access_token = token_data.get("access_token")
-    
+
     if not access_token:
         raise HTTPException(status_code=400, detail="No access token received")
-    
+
     async with httpx.AsyncClient() as client:
         user_response = await client.get(
             GITHUB_USER_URL,
@@ -103,20 +106,24 @@ async def github_callback(code: str, db: Session = Depends(get_db)):
                 "Accept": "application/json",
             },
         )
-    
+
     if user_response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to get user info")
-    
+
     github_user = user_response.json()
     github_id = github_user["id"]
     github_username = github_user["login"]
     github_image_url = github_user["avatar_url"]
     email = github_user["email"]
-    
+
     user = db.query(User).filter(User.github_id == github_id).first()
-    
+
     if user:
-        if user.github_username != github_username or user.github_image_url != github_image_url or user.email != email:
+        if (
+            user.github_username != github_username
+            or user.github_image_url != github_image_url
+            or user.email != email
+        ):
             user.github_username = github_username
             user.github_image_url = github_image_url
             if email:
@@ -130,18 +137,29 @@ async def github_callback(code: str, db: Session = Depends(get_db)):
             user.github_image_url = github_image_url
             db.commit()
         else:
-            user = User(github_id=github_id, github_username=github_username, github_image_url=github_image_url, email=email)
+            user = User(
+                github_id=github_id,
+                github_username=github_username,
+                github_image_url=github_image_url,
+                email=email,
+            )
             db.add(user)
             db.commit()
             db.refresh(user)
     else:
-        user = User(github_id=github_id, github_username=github_username, github_image_url=github_image_url)
+        user = User(
+            github_id=github_id,
+            github_username=github_username,
+            github_image_url=github_image_url,
+        )
         db.add(user)
         db.commit()
         db.refresh(user)
-    
-    jwt_token = create_access_token({"sub": str(user.id), "github_username": github_username})
-    
+
+    jwt_token = create_access_token(
+        {"sub": str(user.id), "github_username": github_username}
+    )
+
     response = RedirectResponse(url=f"{settings.frontend_url}/auth/callback")
     response.set_cookie(
         key=COOKIE_NAME,
@@ -154,12 +172,13 @@ async def github_callback(code: str, db: Session = Depends(get_db)):
     )
     return response
 
+
 @router.get("/gitlab")
 async def gitlab_login():
     """Redirect to GitLab OAuth authorization page"""
     if not settings.gitlab_client_id:
         raise HTTPException(status_code=501, detail="GitLab OAuth not configured")
-    
+
     params = {
         "client_id": settings.gitlab_client_id,
         "redirect_uri": f"{settings.backend_url}/auth/gitlab/callback",
@@ -175,7 +194,7 @@ async def gitlab_callback(code: str, db: Session = Depends(get_db)):
     """Handle GitLab OAuth callback"""
     if not settings.gitlab_client_id:
         raise HTTPException(status_code=501, detail="GitLab OAuth not configured")
-    
+
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             GITLAB_TOKEN_URL,
@@ -188,26 +207,30 @@ async def gitlab_callback(code: str, db: Session = Depends(get_db)):
             },
             headers={"Accept": "application/json"},
         )
-    
+
     if token_response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to get access token from GitLab")
-    
+        raise HTTPException(
+            status_code=400, detail="Failed to get access token from GitLab"
+        )
+
     token_data = token_response.json()
 
     access_token = token_data.get("access_token")
     refresh_token = token_data.get("refresh_token")
     expires_in = token_data.get("expires_in")
-    
+
     if not access_token:
-        raise HTTPException(status_code=400, detail="No access token received from GitLab")
-    
+        raise HTTPException(
+            status_code=400, detail="No access token received from GitLab"
+        )
+
     token_expires_at = None
     if expires_in:
         token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
-    
+
     encrypted_access_token = encrypt_key(access_token)
     encrypted_refresh_token = encrypt_key(refresh_token) if refresh_token else None
-    
+
     async with httpx.AsyncClient() as client:
         user_response = await client.get(
             GITLAB_USER_URL,
@@ -216,23 +239,29 @@ async def gitlab_callback(code: str, db: Session = Depends(get_db)):
                 "Accept": "application/json",
             },
         )
-    
+
     if user_response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to get user info from GitLab")
-    
+        raise HTTPException(
+            status_code=400, detail="Failed to get user info from GitLab"
+        )
+
     gitlab_user = user_response.json()
     gitlab_id = gitlab_user["id"]
     gitlab_username = gitlab_user["username"]
     gitlab_image_url = gitlab_user["avatar_url"]
     email = gitlab_user["email"]
-    
+
     user = db.query(User).filter(User.gitlab_id == gitlab_id).first()
-    
+
     if user:
         user.gitlab_access_token = encrypted_access_token
         user.gitlab_refresh_token = encrypted_refresh_token
         user.gitlab_token_expires_at = token_expires_at
-        if user.gitlab_username != gitlab_username or user.gitlab_image_url != gitlab_image_url or user.email != email:
+        if (
+            user.gitlab_username != gitlab_username
+            or user.gitlab_image_url != gitlab_image_url
+            or user.email != email
+        ):
             user.gitlab_username = gitlab_username
             user.gitlab_image_url = gitlab_image_url
             if email:
@@ -273,13 +302,11 @@ async def gitlab_callback(code: str, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
-        
 
-    jwt_token = create_access_token({
-        "sub": str(user.id),
-        "gitlab_username": gitlab_username
-    })
-    
+    jwt_token = create_access_token(
+        {"sub": str(user.id), "gitlab_username": gitlab_username}
+    )
+
     response = RedirectResponse(url=f"{settings.frontend_url}/auth/callback")
     response.set_cookie(
         key=COOKIE_NAME,

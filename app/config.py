@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     github_app_id: int
     github_private_key_path: str
@@ -16,7 +17,8 @@ class Settings(BaseSettings):
     backend_url: str = "http://localhost:8000"
     frontend_url: str = "http://localhost:3000"
     environment: str = "development"
-    
+
     model_config = SettingsConfigDict(env_file=".env")
+
 
 settings = Settings()

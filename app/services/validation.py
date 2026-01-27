@@ -1,6 +1,8 @@
-from openai import OpenAI, AuthenticationError as OpenAIAuthError
+from anthropic import Anthropic
+from anthropic import AuthenticationError as AnthropicAuthError
 from google import genai
-from anthropic import Anthropic, AuthenticationError as AnthropicAuthError
+from openai import AuthenticationError as OpenAIAuthError
+from openai import OpenAI
 
 
 def validate_openai_key(api_key: str) -> tuple[bool, str]:
@@ -23,7 +25,11 @@ def validate_gemini_key(api_key: str) -> tuple[bool, str]:
         return True, "Valid"
     except Exception as e:
         error_msg = str(e).lower()
-        if "api key" in error_msg or "invalid" in error_msg or "unauthorized" in error_msg:
+        if (
+            "api key" in error_msg
+            or "invalid" in error_msg
+            or "unauthorized" in error_msg
+        ):
             return False, "Invalid API key"
         return False, f"Validation failed: {str(e)}"
 
@@ -35,14 +41,18 @@ def validate_claude_key(api_key: str) -> tuple[bool, str]:
         client.messages.create(
             model="claude-3-haiku-20240307",
             max_tokens=1,
-            messages=[{"role": "user", "content": "hi"}]
+            messages=[{"role": "user", "content": "hi"}],
         )
         return True, "Valid"
     except AnthropicAuthError:
         return False, "Invalid API key"
     except Exception as e:
         error_msg = str(e).lower()
-        if "api key" in error_msg or "invalid" in error_msg or "unauthorized" in error_msg:
+        if (
+            "api key" in error_msg
+            or "invalid" in error_msg
+            or "unauthorized" in error_msg
+        ):
             return False, "Invalid API key"
         return False, f"Validation failed: {str(e)}"
 
