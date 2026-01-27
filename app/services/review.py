@@ -54,7 +54,8 @@ def _perform_github_review(
         return
     
     api_keys = db.query(APIKey).filter(
-        APIKey.user_id == user_id
+        APIKey.user_id == user_id,
+        APIKey.is_active == True
     ).all()
     
     if not api_keys:
@@ -96,7 +97,8 @@ def _perform_gitlab_review(
         return
     
     api_keys = db.query(APIKey).filter(
-        APIKey.user_id == user_id
+        APIKey.user_id == user_id,
+        APIKey.is_active == True
     ).all()
     
     if not api_keys:

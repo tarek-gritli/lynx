@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, Boolean, String, DateTime, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -34,6 +34,7 @@ class APIKey(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     encrypted_key = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     provider = Column(String, nullable=False)
     model = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
