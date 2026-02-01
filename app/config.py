@@ -12,11 +12,15 @@ class Settings(BaseSettings):
     gitlab_url: str = "https://gitlab.com"
     gitlab_webhook_secret: str
     database_url: str
+    postgres_user: str
+    postgres_password: str
+    postgres_db: str
     encryption_key: str
     jwt_secret: str
     backend_url: str = "http://localhost:8000"
     frontend_url: str = "http://localhost:3000"
     environment: str = "development"
+    port: int = 8000
 
     model_config = SettingsConfigDict(env_file=".env")
 

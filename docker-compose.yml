@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: lynx-backend
     environment:
-      DATABASE_URL: postgresql://lynx:lynx@postgres:5432/lynx
+      DATABASE_URL: postgresql://${POSTGRES_USER:-lynx}:${POSTGRES_PASSWORD:-lynx}@db:5432/${POSTGRES_DB:-lynx}
       GITHUB_APP_ID: ${GITHUB_APP_ID}
       GITHUB_PRIVATE_KEY_PATH: /app/github-app-key.pem
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
@@ -21,24 +21,39 @@ services:
       BACKEND_URL: ${BACKEND_URL}
       FRONTEND_URL: ${FRONTEND_URL}
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:80"
     depends_on:
-      - postgres
+      db:
+        condition: service_healthy
     restart: unless-stopped
     volumes:
-      - ./github-app.private-key.pem:/app/github-app-key.pem:ro
-  postgres:
-    image: postgres:15
+      - ${GITHUB_PRIVATE_KEY_PATH}:/app/github-app-key.pem:ro
+    networks:
+      - lynx-network
+  db:
+    image: postgres:17-alpine
     container_name: lynx-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: lynx
+      POSTGRES_USER: ${POSTGRES_USER:-lynx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lynx}
+      POSTGRES_DB: ${POSTGRES_DB:-lynx}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lynx}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - pg_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - lynx-network
 
 volumes:
   pg_data:
+    driver: local
+
+networks:
+  lynx-network:
+    driver: bridge
