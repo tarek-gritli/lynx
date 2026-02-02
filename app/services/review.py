@@ -4,6 +4,7 @@ from github import PullRequest
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.logging import get_logger
 from app.models import APIKey, User
 from app.services.github import get_installation_client
 from app.services.gitlab import (
@@ -17,6 +18,8 @@ from app.services.gitlab import (
 from app.services.llm import get_review
 from app.utils.crypto import decrypt_key
 
+logger = get_logger(__name__)
+
 
 def perform_review(
     repo_name: str,
@@ -27,6 +30,9 @@ def perform_review(
     installation_id: int = None,
 ):
     """Perform code review for a PR/MR on either GitHub or GitLab"""
+    logger.info(
+        f"Starting review for {platform} {repo_name}#{pr_number} (user_id={user_id})"
+    )
     if platform == "github":
         if installation_id is None:
             raise ValueError("installation_id is required for GitHub reviews")
@@ -128,12 +134,14 @@ def _generate_reviews(api_keys: list, diff: str) -> list[dict]:
                 model=api_key.model,
                 api_key=decrypted_api_key,
             )
+            logger.info(f"Review generated successfully using {api_key.provider}")
             reviews.append({"provider": api_key.provider, "review": review_text})
         except Exception as e:
+            logger.error(f"Review failed for {api_key.provider}: {str(e)}")
             reviews.append(
                 {
                     "provider": api_key.provider,
-                    "review": f"❌ Lynx review failed: {str(e)}",
+                    "review": f"❌ Lynx review failed",
                 }
             )
 

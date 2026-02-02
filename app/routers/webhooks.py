@@ -7,8 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.logging import get_logger
 from app.models import User
 from app.services.review import perform_review
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -60,7 +63,9 @@ async def github_webhook(
     installation_id = data["installation"]["id"]
     sender_username = data["sender"]["login"]
 
-    print(f"Event: {event}, Action: {data.get('action')}, User: {sender_username}")
+    logger.info(
+        f"GitHub webhook received - Event: {event}, Action: {data.get('action')}, User: {sender_username}"
+    )
 
     if event == "pull_request" and data.get("action") == "opened":
         pr_number = data["pull_request"]["number"]
@@ -126,7 +131,9 @@ async def gitlab_webhook(
     object_attributes = data.get("object_attributes", {})
     action = object_attributes.get("action")
 
-    print(f"Event: {event_type}, Action: {action}, User: {sender_username}")
+    logger.info(
+        f"GitLab webhook received - Event: {event_type}, Action: {action}, User: {sender_username}"
+    )
 
     if event_type == "merge_request" and action == "open":
         mr_number = object_attributes.get("iid")

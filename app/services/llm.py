@@ -2,6 +2,10 @@ from anthropic import Anthropic
 from google import genai
 from openai import OpenAI
 
+from app.logging import get_logger
+
+logger = get_logger(__name__)
+
 REVIEW_PROMPT = """You are a code reviewer. Analyze this pull request diff and provide a concise review.
 
 Focus on:
@@ -27,6 +31,7 @@ Provide your review:"""
 def get_review(diff: str, provider: str, model: str, api_key: str) -> str:
     """Call LLM to get code review based on the provided diff"""
     prompt = REVIEW_PROMPT.format(diff=diff)
+    logger.debug(f"Requesting review from {provider} using model {model}")
 
     review: str | None = None
 

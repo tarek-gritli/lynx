@@ -1,5 +1,5 @@
-<div style="text-align: center; background-color: #f9f9f9; margin-bottom: 20px; padding: 20px;">
-  <img src="lynx_logo.png" alt="Lynx Logo" width="300" height="300"/>
+<div align="center">
+    <img src="lynx_logo.png" alt="Lynx Logo" width="300" height="300" />
 </div>
 
 <p align="center">
