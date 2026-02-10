@@ -1,3 +1,4 @@
+from typing import Dict, Any
 from anthropic import Anthropic
 from google import genai
 from openai import OpenAI
@@ -28,29 +29,38 @@ Here's the diff:
 Provide your review:"""
 
 
-def get_review(diff: str, provider: str, model: str, api_key: str) -> str:
-    """Call LLM to get code review based on the provided diff"""
+def get_review(diff: str, provider: str, model: str, api_key: str) -> Dict[str, Any]:
+    """Call LLM to get code review based on the provided diff.
+
+    Returns:
+        Dict containing:
+        - review: The review text
+        - provider: The LLM provider used
+        - model: The model used
+        - tokens: Dict with prompt, completion, and total token counts
+    """
     prompt = REVIEW_PROMPT.format(diff=diff)
     logger.debug(f"Requesting review from {provider} using model {model}")
 
-    review: str | None = None
+    result: Dict[str, Any] | None = None
 
     if provider == "openai":
-        review = get_openai_review(prompt, model, api_key)
+        result = get_openai_review(prompt, model, api_key)
     elif provider == "gemini":
-        review = get_gemini_review(prompt, model, api_key)
+        result = get_gemini_review(prompt, model, api_key)
     elif provider == "claude":
-        review = get_claude_review(prompt, model, api_key)
+        result = get_claude_review(prompt, model, api_key)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
-    if not review:
+    if not result or not result.get("review"):
         raise RuntimeError(f"{provider} returned empty response")
 
-    return review.strip()
+    result["review"] = result["review"].strip()
+    return result
 
 
-def get_openai_review(prompt: str, model: str, api_key: str) -> str | None:
+def get_openai_review(prompt: str, model: str, api_key: str) -> Dict[str, Any] | None:
     """Get review from openai"""
     try:
         client = OpenAI(api_key=api_key)
@@ -63,13 +73,22 @@ def get_openai_review(prompt: str, model: str, api_key: str) -> str | None:
             temperature=0.3,
             max_tokens=1000,
         )
+        usage = response.usage
+        return {
+            "review": response.choices[0].message.content,
+            "provider": "openai",
+            "model": model,
+            "tokens": {
+                "prompt": usage.prompt_tokens,
+                "completion": usage.completion_tokens,
+                "total": usage.total_tokens,
+            },
+        }
     except Exception as e:
         raise RuntimeError(f"OpenAI request failed {e}") from e
 
-    return response.choices[0].message.content
 
-
-def get_gemini_review(prompt: str, model: str, api_key: str) -> str | None:
+def get_gemini_review(prompt: str, model: str, api_key: str) -> Dict[str, Any] | None:
     """Get review from gemini"""
     try:
         client = genai.Client(api_key=api_key)
@@ -77,10 +96,20 @@ def get_gemini_review(prompt: str, model: str, api_key: str) -> str | None:
             model=model,
             contents=prompt,
         )
+        usage = response.usage_metadata if hasattr(response, "usage_metadata") else None
+        tokens = {
+            "prompt": usage.prompt_token_count if usage else None,
+            "completion": usage.completion_token_count if usage else None,
+            "total": usage.total_token_count if usage else None,
+        }
+        return {
+            "review": response.text,
+            "provider": "gemini",
+            "model": model,
+            "tokens": tokens,
+        }
     except Exception as e:
         raise RuntimeError(f"Gemini request failed {e}") from e
-
-    return response.text
 
 
 def get_claude_review(prompt: str, model: str, api_key: str) -> str | None:
@@ -91,9 +120,19 @@ def get_claude_review(prompt: str, model: str, api_key: str) -> str | None:
         response = client.messages.create(
             model=model, messages=[{"role": "user", "content": prompt}], max_tokens=1024
         )
+
+        usage = response.usage
+
+        return {
+            "review": response.content[0].text,
+            "provider": "claude",
+            "model": model,
+            "tokens": {
+                "prompt": usage.input_tokens,
+                "completion": usage.output_tokens,
+                "total": usage.input_tokens + usage.output_tokens,
+            },
+        }
+
     except Exception as e:
         raise RuntimeError(f"Claude request failed {e}") from e
-
-    if not response.content:
-        return None
-    return response.content[0].text

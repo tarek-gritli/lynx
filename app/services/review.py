@@ -1,11 +1,11 @@
-from typing import Literal
+from typing import Dict, Literal
 
 from github import PullRequest
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.logging import get_logger
-from app.models import APIKey, User
+from app.models import APIKey, Review, User
 from app.services.github import get_installation_client
 from app.services.gitlab import (
     create_mr_note,
@@ -73,7 +73,7 @@ def _perform_github_review(
         )
         return
 
-    reviews = _generate_reviews(api_keys, diff)
+    reviews = _generate_reviews(api_keys, diff, user_id, repo_name, db)
     comment = _format_multi_review(reviews)
 
     pr.create_issue_comment(comment)
@@ -113,7 +113,7 @@ def _perform_gitlab_review(repo_name: str, mr_iid: int, user_id: int, db: Sessio
         )
         return
 
-    reviews = _generate_reviews(api_keys, diff)
+    reviews = _generate_reviews(api_keys, diff, user_id, repo_name, db)
     comment = _format_multi_review(reviews)
 
     create_mr_note(mr, comment)
@@ -121,27 +121,51 @@ def _perform_gitlab_review(repo_name: str, mr_iid: int, user_id: int, db: Sessio
     return comment
 
 
-def _generate_reviews(api_keys: list, diff: str) -> list[dict]:
-    """Generate reviews from all configured API keys"""
+def _generate_reviews(
+    api_keys: list, diff: str, user_id: int, repo_name: str, db: Session
+) -> list[dict]:
+    """Generate reviews from all configured API keys and save to database"""
     reviews = []
 
     for api_key in api_keys:
         decrypted_api_key = decrypt_key(api_key.encrypted_key)
         try:
-            review_text = get_review(
+            result = get_review(
                 diff=diff,
                 provider=api_key.provider,
                 model=api_key.model,
                 api_key=decrypted_api_key,
             )
             logger.info(f"Review generated successfully using {api_key.provider}")
-            reviews.append({"provider": api_key.provider, "review": review_text})
+
+            tokens: Dict[str, int] = result.get("tokens", {})
+            prompt_tokens = tokens.get("prompt") or 0
+            completion_tokens = tokens.get("completion") or 0
+            total_tokens = tokens.get("total") or 0
+
+            review_record = Review(
+                user_id=user_id,
+                provider=api_key.provider,
+                model=api_key.model,
+                repo_name=repo_name,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                review_text=result["review"],
+            )
+            db.add(review_record)
+            db.commit()
+            logger.info(
+                f"Review saved to database (tokens: {total_tokens}, provider: {api_key.provider})"
+            )
+
+            reviews.append({"provider": api_key.provider, "review": result["review"]})
         except Exception as e:
             logger.error(f"Review failed for {api_key.provider}: {str(e)}")
             reviews.append(
                 {
                     "provider": api_key.provider,
-                    "review": f"❌ Lynx review failed",
+                    "review": "❌ Lynx review failed",
                 }
             )
 
