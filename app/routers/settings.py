@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.constants import PROVIDER_MODELS, Provider
 from app.database import get_db
 from app.models import APIKey, User
 from app.services.validation import validate_api_key
@@ -11,13 +12,16 @@ from .auth import get_current_user
 
 router = APIRouter()
 
-SUPPORTED_PROVIDERS = ["openai", "gemini", "claude"]
-
 
 class SetAPIKeyRequest(BaseModel):
-    provider: str
+    provider: Provider
     model: str
     api_key: str
+
+
+def validate_model_for_provider(provider: Provider, model: str) -> bool:
+    """Check if the model is valid for the given provider"""
+    return model in PROVIDER_MODELS.get(provider, set())
 
 
 @router.post("/api-key")
@@ -26,8 +30,12 @@ def set_api_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if req.provider not in SUPPORTED_PROVIDERS:
-        raise HTTPException(status_code=400, detail="Unsupported provider")
+    if not validate_model_for_provider(req.provider, req.model):
+        valid_models = ", ".join(sorted(PROVIDER_MODELS[req.provider]))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model '{req.model}' for provider '{req.provider}'. Valid models: {valid_models}",
+        )
 
     is_valid, message = validate_api_key(req.provider, req.api_key)
     if not is_valid:
@@ -59,7 +67,7 @@ def set_api_key(
 
 
 class DeleteAPIKeyRequest(BaseModel):
-    provider: str
+    provider: Provider
 
 
 @router.delete("/api-key")
@@ -68,9 +76,6 @@ def delete_api_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if req.provider not in SUPPORTED_PROVIDERS:
-        raise HTTPException(status_code=400, detail="Unsupported provider")
-
     existing = (
         db.query(APIKey)
         .filter(APIKey.user_id == current_user.id, APIKey.provider == req.provider)
