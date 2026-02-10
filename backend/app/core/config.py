@@ -21,8 +21,13 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
     environment: str = "development"
     port: int = 8000
+    api_prefix: str = "/api/v1"
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(
+        env_file="../.env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
 
 
 settings = Settings()

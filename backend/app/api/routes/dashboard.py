@@ -1,16 +1,14 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
-from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.logging import get_logger
-from app.models import Review, User
-from app.routers.auth import get_current_user
+from app.api.deps import CurrentUser, SessionDep
 from app.constants import Provider
+from app.logging import get_logger
+from app.models import Review
 
 logger = get_logger(__name__)
 
@@ -65,7 +63,7 @@ def get_review_filters(
     status: Literal["success", "failed"] | None = Query(
         None, description="Filter by review status (success or failed)"
     ),
-):
+) -> ReviewFilters:
     """Dependency to parse review filters from query params"""
     return ReviewFilters(
         provider=provider,
@@ -77,13 +75,16 @@ def get_review_filters(
     )
 
 
+FiltersDep = Annotated[ReviewFilters, Depends(get_review_filters)]
+
+
 @router.get("/reviews")
 def get_reviews(
+    db: SessionDep,
+    current_user: CurrentUser,
+    filters: FiltersDep,
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    filters: ReviewFilters = Depends(get_review_filters),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get paginated reviews for the current user with optional filters"""
     offset = (page - 1) * limit
@@ -109,8 +110,8 @@ def get_reviews(
 @router.get("/reviews/{review_id}")
 def get_review_detail(
     review_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: SessionDep,
+    current_user: CurrentUser,
 ):
     """Get detailed information for a specific review"""
     review = (
@@ -127,7 +128,8 @@ def get_review_detail(
 
 @router.get("/stats")
 def get_stats(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    db: SessionDep,
+    current_user: CurrentUser,
 ):
     """Get usage statistics for the current user"""
     total_reviews = db.query(Review).filter(Review.user_id == current_user.id).count()

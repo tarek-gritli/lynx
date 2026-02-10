@@ -2,7 +2,7 @@ import logging
 import sys
 from typing import Literal
 
-from app.config import settings
+from app.core.config import settings
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 

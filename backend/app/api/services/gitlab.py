@@ -4,7 +4,7 @@ import httpx
 from gitlab import Gitlab
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.core.config import settings
 from app.utils.crypto import decrypt_key, encrypt_key
 
 

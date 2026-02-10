@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta, timezone
 
 import httpx
-import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Response
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
 
-from app.config import settings
-from app.database import get_db
+from app.api.deps import (
+    COOKIE_NAME,
+    CurrentUser,
+    SessionDep,
+    create_access_token,
+)
+from app.core.config import settings
 from app.models import User
 from app.utils.crypto import encrypt_key
 
@@ -19,48 +22,6 @@ GITHUB_USER_URL = "https://api.github.com/user"
 GITLAB_AUTHORIZE_URL = f"{settings.gitlab_url}/oauth/authorize"
 GITLAB_TOKEN_URL = f"{settings.gitlab_url}/oauth/token"
 GITLAB_USER_URL = f"{settings.gitlab_url}/api/v4/user"
-
-
-COOKIE_NAME = "lynx_token"
-
-
-def create_access_token(
-    data: dict, expires_delta: timedelta = timedelta(days=7)
-) -> str:
-    """Create JWT access token"""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.jwt_secret, algorithm="HS256")
-
-
-def get_current_user(
-    request: Request,
-    db: Session = Depends(get_db),
-) -> User:
-    """Dependency to get current user from JWT cookie"""
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials",
-    )
-
-    token = request.cookies.get(COOKIE_NAME)
-    if not token:
-        raise credentials_exception
-
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except jwt.PyJWTError:
-        raise credentials_exception
-
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise credentials_exception
-
-    return user
 
 
 @router.get("/github")
@@ -76,7 +37,7 @@ async def github_login():
 
 
 @router.get("/github/callback")
-async def github_callback(code: str, db: Session = Depends(get_db)):
+async def github_callback(code: str, db: SessionDep):
     """Handle GitHub OAuth callback"""
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -90,12 +51,16 @@ async def github_callback(code: str, db: Session = Depends(get_db)):
         )
 
     if token_response.status_code != 200:
+        from fastapi import HTTPException
+
         raise HTTPException(status_code=400, detail="Failed to get access token")
 
     token_data = token_response.json()
     access_token = token_data.get("access_token")
 
     if not access_token:
+        from fastapi import HTTPException
+
         raise HTTPException(status_code=400, detail="No access token received")
 
     async with httpx.AsyncClient() as client:
@@ -108,6 +73,8 @@ async def github_callback(code: str, db: Session = Depends(get_db)):
         )
 
     if user_response.status_code != 200:
+        from fastapi import HTTPException
+
         raise HTTPException(status_code=400, detail="Failed to get user info")
 
     github_user = user_response.json()
@@ -176,6 +143,8 @@ async def github_callback(code: str, db: Session = Depends(get_db)):
 @router.get("/gitlab")
 async def gitlab_login():
     """Redirect to GitLab OAuth authorization page"""
+    from fastapi import HTTPException
+
     if not settings.gitlab_client_id:
         raise HTTPException(status_code=501, detail="GitLab OAuth not configured")
 
@@ -190,8 +159,10 @@ async def gitlab_login():
 
 
 @router.get("/gitlab/callback")
-async def gitlab_callback(code: str, db: Session = Depends(get_db)):
+async def gitlab_callback(code: str, db: SessionDep):
     """Handle GitLab OAuth callback"""
+    from fastapi import HTTPException
+
     if not settings.gitlab_client_id:
         raise HTTPException(status_code=501, detail="GitLab OAuth not configured")
 
@@ -321,7 +292,7 @@ async def gitlab_callback(code: str, db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
+async def get_current_user_info(current_user: CurrentUser):
     """Get current authenticated user info"""
     return {
         "id": current_user.id,

@@ -2,14 +2,13 @@ import hashlib
 import hmac
 import re
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 
-from app.config import settings
-from app.database import get_db
+from app.api.deps import SessionDep
+from app.core.config import settings
 from app.logging import get_logger
 from app.models import User
-from app.services.review import perform_review
+from ..services.review import perform_review
 
 logger = get_logger(__name__)
 
@@ -48,7 +47,9 @@ def verify_gitlab_token(token: str) -> bool:
 
 @router.post("/github")
 async def github_webhook(
-    req: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+    req: Request,
+    background_tasks: BackgroundTasks,
+    db: SessionDep,
 ):
     """Handle GitHub webhook events"""
     signature = req.headers.get("X-Hub-Signature-256")
@@ -117,7 +118,9 @@ async def github_webhook(
 
 @router.post("/gitlab")
 async def gitlab_webhook(
-    req: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+    req: Request,
+    background_tasks: BackgroundTasks,
+    db: SessionDep,
 ):
     """Handle GitLab webhook events"""
     token = req.headers.get("X-Gitlab-Token")

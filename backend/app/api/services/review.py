@@ -3,11 +3,13 @@ from typing import Dict, Literal
 from github import PullRequest
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.core.config import settings
 from app.logging import get_logger
 from app.models import APIKey, Review, User
-from app.services.github import get_installation_client
-from app.services.gitlab import (
+from app.utils.crypto import decrypt_key
+
+from ..services.github import get_installation_client
+from ..services.gitlab import (
     create_mr_note,
     get_gitlab_client,
     get_merge_request,
@@ -15,8 +17,7 @@ from app.services.gitlab import (
     get_project,
     get_valid_gitlab_token,
 )
-from app.services.llm import get_review
-from app.utils.crypto import decrypt_key
+from ..services.llm import get_review
 
 logger = get_logger(__name__)
 

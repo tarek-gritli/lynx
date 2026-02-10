@@ -1,14 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
+from app.api.deps import CurrentUser, SessionDep
 from app.constants import PROVIDER_MODELS, Provider
-from app.database import get_db
-from app.models import APIKey, User
-from app.services.validation import validate_api_key
+from app.models import APIKey
 from app.utils.crypto import encrypt_key
 
-from .auth import get_current_user
+from ..services.validation import validate_api_key
 
 router = APIRouter()
 
@@ -27,8 +25,8 @@ def validate_model_for_provider(provider: Provider, model: str) -> bool:
 @router.post("/api-key")
 def set_api_key(
     req: SetAPIKeyRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: SessionDep,
+    current_user: CurrentUser,
 ):
     if not validate_model_for_provider(req.provider, req.model):
         valid_models = ", ".join(sorted(PROVIDER_MODELS[req.provider]))
@@ -73,8 +71,8 @@ class DeleteAPIKeyRequest(BaseModel):
 @router.delete("/api-key")
 def delete_api_key(
     req: DeleteAPIKeyRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: SessionDep,
+    current_user: CurrentUser,
 ):
     existing = (
         db.query(APIKey)

@@ -2,8 +2,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from .logging import get_logger, setup_logging
-from .routers import auth, dashboard, settings, webhooks
+from app.api.main import api_router
+from app.core.config import settings
+from app.logging import get_logger, setup_logging
 
 logger = get_logger(__name__)
 
@@ -18,10 +19,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Lynx", lifespan=lifespan)
 
-app.include_router(settings.router, prefix="/settings", tags=["settings"])
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
-app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
-app.include_router(dashboard.router, prefix="/usage", tags=["dashboard"])
+app.include_router(api_router, prefix=settings.api_prefix)
 
 
 @app.get("/")

@@ -1,6 +1,6 @@
 from github import Github, GithubIntegration
 
-from app.config import settings
+from app.core.config import settings
 
 
 def get_installation_client(installation_id: int) -> Github:
