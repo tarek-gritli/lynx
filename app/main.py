@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .logging import get_logger, setup_logging
-from .routers import auth, settings, webhooks
+from .routers import auth, dashboard, settings, webhooks
 
 logger = get_logger(__name__)
 
@@ -21,6 +21,7 @@ app = FastAPI(title="Lynx", lifespan=lifespan)
 app.include_router(settings.router, prefix="/settings", tags=["settings"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
+app.include_router(dashboard.router, prefix="/usage", tags=["dashboard"])
 
 
 @app.get("/")
