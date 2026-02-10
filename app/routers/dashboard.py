@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -9,6 +10,7 @@ from app.database import get_db
 from app.logging import get_logger
 from app.models import Review, User
 from app.routers.auth import get_current_user
+from app.constants import Provider
 
 logger = get_logger(__name__)
 
@@ -24,11 +26,13 @@ class ReviewFilters:
     repo_name: str | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
+    status: str | None = None
 
     FIELD_MAP = {
         "provider": Review.provider,
         "model": Review.model,
         "repo_name": Review.repo_name,
+        "status": Review.status,
     }
 
     def apply(self, query):
@@ -53,12 +57,15 @@ class ReviewFilters:
 
 
 def get_review_filters(
-    provider: str | None = Query(None, description="Filter by provider"),
+    provider: Provider | None = Query(None, description="Filter by provider"),
     model: str | None = Query(None, description="Filter by model"),
     repo_name: str | None = Query(None, description="Filter by repository name"),
     start_date: datetime | None = Query(None, description="Filter by start date"),
     end_date: datetime | None = Query(None, description="Filter by end date"),
-) -> ReviewFilters:
+    status: Literal["success", "failed"] | None = Query(
+        None, description="Filter by review status (success or failed)"
+    ),
+):
     """Dependency to parse review filters from query params"""
     return ReviewFilters(
         provider=provider,
@@ -66,6 +73,7 @@ def get_review_filters(
         repo_name=repo_name,
         start_date=start_date,
         end_date=end_date,
+        status=status,
     )
 
 
@@ -123,6 +131,12 @@ def get_stats(
 ):
     """Get usage statistics for the current user"""
     total_reviews = db.query(Review).filter(Review.user_id == current_user.id).count()
+    successful_reviews = (
+        db.query(Review)
+        .filter(Review.user_id == current_user.id, Review.status == "success")
+        .count()
+    )
+    failed_reviews = total_reviews - successful_reviews
     total_tokens = (
         db.query(Review)
         .filter(Review.user_id == current_user.id)
@@ -134,4 +148,6 @@ def get_stats(
     return {
         "total_reviews": total_reviews,
         "total_tokens": total_tokens,
+        "successful_reviews": successful_reviews,
+        "failed_reviews": failed_reviews,
     }
