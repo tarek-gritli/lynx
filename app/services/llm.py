@@ -1,4 +1,5 @@
-from typing import Dict, Any
+from typing import TypedDict
+
 from anthropic import Anthropic
 from google import genai
 from openai import OpenAI
@@ -6,6 +7,20 @@ from openai import OpenAI
 from app.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class TokenUsage(TypedDict):
+    prompt: int | None
+    completion: int | None
+    total: int | None
+
+
+class ReviewResult(TypedDict):
+    review: str
+    provider: str
+    model: str
+    tokens: TokenUsage
+
 
 REVIEW_PROMPT = """You are a code reviewer. Analyze this pull request diff and provide a concise review.
 
@@ -29,11 +44,11 @@ Here's the diff:
 Provide your review:"""
 
 
-def get_review(diff: str, provider: str, model: str, api_key: str) -> Dict[str, Any]:
+def get_review(diff: str, provider: str, model: str, api_key: str) -> ReviewResult:
     """Call LLM to get code review based on the provided diff.
 
     Returns:
-        Dict containing:
+        ReviewResult containing:
         - review: The review text
         - provider: The LLM provider used
         - model: The model used
@@ -42,7 +57,7 @@ def get_review(diff: str, provider: str, model: str, api_key: str) -> Dict[str, 
     prompt = REVIEW_PROMPT.format(diff=diff)
     logger.debug(f"Requesting review from {provider} using model {model}")
 
-    result: Dict[str, Any] | None = None
+    result: ReviewResult | None = None
 
     if provider == "openai":
         result = get_openai_review(prompt, model, api_key)
@@ -60,7 +75,7 @@ def get_review(diff: str, provider: str, model: str, api_key: str) -> Dict[str, 
     return result
 
 
-def get_openai_review(prompt: str, model: str, api_key: str) -> Dict[str, Any] | None:
+def get_openai_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
     """Get review from openai"""
     try:
         client = OpenAI(api_key=api_key)
@@ -88,7 +103,7 @@ def get_openai_review(prompt: str, model: str, api_key: str) -> Dict[str, Any] |
         raise RuntimeError(f"OpenAI request failed {e}") from e
 
 
-def get_gemini_review(prompt: str, model: str, api_key: str) -> Dict[str, Any] | None:
+def get_gemini_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
     """Get review from gemini"""
     try:
         client = genai.Client(api_key=api_key)
@@ -112,7 +127,7 @@ def get_gemini_review(prompt: str, model: str, api_key: str) -> Dict[str, Any] |
         raise RuntimeError(f"Gemini request failed {e}") from e
 
 
-def get_claude_review(prompt: str, model: str, api_key: str) -> str | None:
+def get_claude_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
     """Get review from claude"""
     try:
         client = Anthropic(api_key=api_key)
