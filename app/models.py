@@ -65,12 +65,14 @@ class Review(Base):
     provider = Column(String, nullable=False)
     model = Column(String, nullable=False)
     repo_name = Column(String, nullable=False)
+    status = Column(String, default="success", nullable=False)
+    error_message = Column(Text, nullable=True)
 
     prompt_tokens = Column(Integer, default=0)
     completion_tokens = Column(Integer, default=0)
     total_tokens = Column(Integer, default=0)
 
-    review_text = Column(Text, nullable=False)
+    review_text = Column(Text, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

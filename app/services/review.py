@@ -161,7 +161,22 @@ def _generate_reviews(
 
             reviews.append({"provider": api_key.provider, "review": result["review"]})
         except Exception as e:
-            logger.error(f"Review failed for {api_key.provider}: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Review failed for {api_key.provider}: {error_msg}")
+
+            failed_review = Review(
+                user_id=user_id,
+                provider=api_key.provider,
+                model=api_key.model,
+                repo_name=repo_name,
+                status="failed",
+                error_message=error_msg,
+                review_text=None,
+            )
+            db.add(failed_review)
+            db.commit()
+            logger.info(f"Failed review recorded in database for {api_key.provider}")
+
             reviews.append(
                 {
                     "provider": api_key.provider,
