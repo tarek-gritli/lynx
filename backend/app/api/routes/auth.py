@@ -127,8 +127,8 @@ async def github_callback(code: str, db: SessionDep):
         key=COOKIE_NAME,
         value=jwt_token,
         httponly=True,
-        secure=settings.environment == "production",
-        samesite="lax",
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
         max_age=60 * 60 * 24 * 7,
         domain=None,
     )
@@ -274,8 +274,8 @@ async def gitlab_callback(code: str, db: SessionDep):
         key=COOKIE_NAME,
         value=jwt_token,
         httponly=True,
-        secure=settings.environment == "production",
-        samesite="lax",
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
         max_age=60 * 60 * 24 * 7,
         domain=None,
     )

@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     port: int = 8000
     api_prefix: str = "/api/v1"
+    cors_origins: list[str] = ["http://localhost:5173"]
+    cookie_secure: bool = True
+    cookie_samesite: str = "lax"
 
     model_config = SettingsConfigDict(
         env_file="../.env",
