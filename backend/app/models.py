@@ -65,7 +65,9 @@ class Review(Base):
     provider = Column(String, nullable=False)
     model = Column(String, nullable=False)
     repo_name = Column(String, nullable=False)
-    status = Column(String, default="success", nullable=False)
+    pr_number = Column(Integer, nullable=False)
+    pr_url = Column(String, nullable=False)
+    status = Column(String, default="pending", nullable=False)
     error_message = Column(Text, nullable=True)
 
     prompt_tokens = Column(Integer, default=0)

@@ -29,6 +29,7 @@ def perform_review(
     db: Session,
     platform: Literal["github", "gitlab"] = "github",
     installation_id: int = None,
+    pr_url: str = "",
 ):
     """Perform code review for a PR/MR on either GitHub or GitLab"""
     logger.info(
@@ -38,21 +39,29 @@ def perform_review(
         if installation_id is None:
             raise ValueError("installation_id is required for GitHub reviews")
         return _perform_github_review(
-            installation_id, repo_name, pr_number, user_id, db
+            installation_id, repo_name, pr_number, user_id, db, pr_url
         )
     elif platform == "gitlab":
-        return _perform_gitlab_review(repo_name, pr_number, user_id, db)
+        return _perform_gitlab_review(repo_name, pr_number, user_id, db, pr_url)
     else:
         raise ValueError(f"Unsupported platform: {platform}")
 
 
 def _perform_github_review(
-    installation_id: int, repo_name: str, pr_number: int, user_id: int, db: Session
+    installation_id: int,
+    repo_name: str,
+    pr_number: int,
+    user_id: int,
+    db: Session,
+    pr_url: str = "",
 ):
     """Perform review for a GitHub Pull Request"""
     gh = get_installation_client(installation_id)
     repo = gh.get_repo(repo_name)
     pr = repo.get_pull(pr_number)
+
+    if not pr_url:
+        pr_url = pr.html_url
 
     diff = get_pr_diff(pr)
 
@@ -74,7 +83,9 @@ def _perform_github_review(
         )
         return
 
-    reviews = _generate_reviews(api_keys, diff, user_id, repo_name, db)
+    reviews = _generate_reviews(
+        api_keys, diff, user_id, repo_name, pr_number, pr_url, db
+    )
     comment = _format_multi_review(reviews)
 
     pr.create_issue_comment(comment)
@@ -82,7 +93,13 @@ def _perform_github_review(
     return comment
 
 
-def _perform_gitlab_review(repo_name: str, mr_iid: int, user_id: int, db: Session):
+def _perform_gitlab_review(
+    repo_name: str,
+    mr_iid: int,
+    user_id: int,
+    db: Session,
+    pr_url: str = "",
+):
     """Perform review for a GitLab Merge Request"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.gitlab_access_token:
@@ -92,6 +109,9 @@ def _perform_gitlab_review(repo_name: str, mr_iid: int, user_id: int, db: Sessio
     gl = get_gitlab_client(gitlab_token)
     project = get_project(gl, repo_name)
     mr = get_merge_request(project, mr_iid)
+
+    if not pr_url:
+        pr_url = mr.web_url
 
     diff = get_mr_diff(mr)
 
@@ -114,7 +134,9 @@ def _perform_gitlab_review(repo_name: str, mr_iid: int, user_id: int, db: Sessio
         )
         return
 
-    reviews = _generate_reviews(api_keys, diff, user_id, repo_name, db)
+    reviews = _generate_reviews(
+        api_keys, diff, user_id, repo_name, mr_iid, pr_url, db
+    )
     comment = _format_multi_review(reviews)
 
     create_mr_note(mr, comment)
@@ -123,13 +145,36 @@ def _perform_gitlab_review(repo_name: str, mr_iid: int, user_id: int, db: Sessio
 
 
 def _generate_reviews(
-    api_keys: list, diff: str, user_id: int, repo_name: str, db: Session
+    api_keys: list,
+    diff: str,
+    user_id: int,
+    repo_name: str,
+    pr_number: int,
+    pr_url: str,
+    db: Session,
 ) -> list[dict]:
     """Generate reviews from all configured API keys and save to database"""
     reviews = []
 
     for api_key in api_keys:
         decrypted_api_key = decrypt_key(api_key.encrypted_key)
+
+        review_record = Review(
+            user_id=user_id,
+            provider=api_key.provider,
+            model=api_key.model,
+            repo_name=repo_name,
+            pr_number=pr_number,
+            pr_url=pr_url,
+            status="pending",
+        )
+        db.add(review_record)
+        db.commit()
+        db.refresh(review_record)
+        logger.info(
+            f"Pending review created in database for {api_key.provider} (id={review_record.id})"
+        )
+
         try:
             result = get_review(
                 diff=diff,
@@ -144,20 +189,14 @@ def _generate_reviews(
             completion_tokens = tokens.get("completion") or 0
             total_tokens = tokens.get("total") or 0
 
-            review_record = Review(
-                user_id=user_id,
-                provider=api_key.provider,
-                model=api_key.model,
-                repo_name=repo_name,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=total_tokens,
-                review_text=result["review"],
-            )
-            db.add(review_record)
+            review_record.status = "success"
+            review_record.prompt_tokens = prompt_tokens
+            review_record.completion_tokens = completion_tokens
+            review_record.total_tokens = total_tokens
+            review_record.review_text = result["review"]
             db.commit()
             logger.info(
-                f"Review saved to database (tokens: {total_tokens}, provider: {api_key.provider})"
+                f"Review updated to success in database (tokens: {total_tokens}, provider: {api_key.provider})"
             )
 
             reviews.append({"provider": api_key.provider, "review": result["review"]})
@@ -165,18 +204,10 @@ def _generate_reviews(
             error_msg = str(e)
             logger.error(f"Review failed for {api_key.provider}: {error_msg}")
 
-            failed_review = Review(
-                user_id=user_id,
-                provider=api_key.provider,
-                model=api_key.model,
-                repo_name=repo_name,
-                status="failed",
-                error_message=error_msg,
-                review_text=None,
-            )
-            db.add(failed_review)
+            review_record.status = "failed"
+            review_record.error_message = error_msg
             db.commit()
-            logger.info(f"Failed review recorded in database for {api_key.provider}")
+            logger.info(f"Review updated to failed in database for {api_key.provider}")
 
             reviews.append(
                 {

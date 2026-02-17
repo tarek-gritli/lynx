@@ -69,7 +69,9 @@ async def github_webhook(
     )
 
     if event == "pull_request" and data.get("action") == "opened":
-        pr_number = data["pull_request"]["number"]
+        pr_data = data["pull_request"]
+        pr_number = pr_data["number"]
+        pr_url = pr_data["html_url"]
         repo_name = data["repository"]["full_name"]
 
         user = db.query(User).filter(User.github_username == sender_username).first()
@@ -85,6 +87,7 @@ async def github_webhook(
             db=db,
             platform="github",
             installation_id=installation_id,
+            pr_url=pr_url,
         )
 
         return {"status": "queued for review"}
@@ -93,6 +96,7 @@ async def github_webhook(
         comment_body = data["comment"]["body"].strip()
         if re.match(r"^/review\b", comment_body, re.IGNORECASE):
             pr_number = data["issue"]["number"]
+            pr_url = data["issue"].get("pull_request", {}).get("html_url", "")
             repo_name = data["repository"]["full_name"]
 
             user = (
@@ -109,6 +113,7 @@ async def github_webhook(
                 db=db,
                 platform="github",
                 installation_id=installation_id,
+                pr_url=pr_url,
             )
 
             return {"status": "queued for review"}
@@ -140,6 +145,7 @@ async def gitlab_webhook(
 
     if event_type == "merge_request" and action == "open":
         mr_number = object_attributes.get("iid")
+        pr_url = object_attributes.get("url", "")
         repo_name = data["project"]["path_with_namespace"]
 
         user = db.query(User).filter(User.gitlab_username == sender_username).first()
@@ -154,6 +160,7 @@ async def gitlab_webhook(
             user_id=user.id,
             db=db,
             platform="gitlab",
+            pr_url=pr_url,
         )
 
         return {"status": "queued for review"}
@@ -165,6 +172,7 @@ async def gitlab_webhook(
         comment_body = object_attributes.get("note", "").strip()
         if re.match(r"^/review\b", comment_body, re.IGNORECASE):
             mr_number = data["merge_request"]["iid"]
+            pr_url = data["merge_request"].get("url", "")
             repo_name = data["project"]["path_with_namespace"]
 
             user = (
@@ -180,6 +188,7 @@ async def gitlab_webhook(
                 user_id=user.id,
                 db=db,
                 platform="gitlab",
+                pr_url=pr_url,
             )
 
             return {"status": "queued for review"}

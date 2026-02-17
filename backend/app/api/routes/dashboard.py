@@ -60,8 +60,8 @@ def get_review_filters(
     repo_name: str | None = Query(None, description="Filter by repository name"),
     start_date: datetime | None = Query(None, description="Filter by start date"),
     end_date: datetime | None = Query(None, description="Filter by end date"),
-    status: Literal["success", "failed"] | None = Query(
-        None, description="Filter by review status (success or failed)"
+    status: Literal["pending", "success", "failed"] | None = Query(
+        None, description="Filter by review status (pending, success, or failed)"
     ),
 ) -> ReviewFilters:
     """Dependency to parse review filters from query params"""
@@ -138,7 +138,12 @@ def get_stats(
         .filter(Review.user_id == current_user.id, Review.status == "success")
         .count()
     )
-    failed_reviews = total_reviews - successful_reviews
+    failed_reviews = (
+        db.query(Review)
+        .filter(Review.user_id == current_user.id, Review.status == "failed")
+        .count()
+    )
+    pending_reviews = total_reviews - successful_reviews - failed_reviews
     total_tokens = (
         db.query(Review)
         .filter(Review.user_id == current_user.id)
@@ -152,4 +157,5 @@ def get_stats(
         "total_tokens": total_tokens,
         "successful_reviews": successful_reviews,
         "failed_reviews": failed_reviews,
+        "pending_reviews": pending_reviews,
     }
