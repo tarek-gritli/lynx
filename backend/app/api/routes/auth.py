@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException
 from fastapi.responses import RedirectResponse
 
 from app.api.deps import (
@@ -51,7 +51,6 @@ async def github_callback(code: str, db: SessionDep):
         )
 
     if token_response.status_code != 200:
-        from fastapi import HTTPException
 
         raise HTTPException(status_code=400, detail="Failed to get access token")
 
@@ -59,8 +58,6 @@ async def github_callback(code: str, db: SessionDep):
     access_token = token_data.get("access_token")
 
     if not access_token:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=400, detail="No access token received")
 
     async with httpx.AsyncClient() as client:
@@ -73,8 +70,6 @@ async def github_callback(code: str, db: SessionDep):
         )
 
     if user_response.status_code != 200:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=400, detail="Failed to get user info")
 
     github_user = user_response.json()
@@ -143,8 +138,6 @@ async def github_callback(code: str, db: SessionDep):
 @router.get("/gitlab")
 async def gitlab_login():
     """Redirect to GitLab OAuth authorization page"""
-    from fastapi import HTTPException
-
     if not settings.gitlab_client_id:
         raise HTTPException(status_code=501, detail="GitLab OAuth not configured")
 
@@ -161,8 +154,6 @@ async def gitlab_login():
 @router.get("/gitlab/callback")
 async def gitlab_callback(code: str, db: SessionDep):
     """Handle GitLab OAuth callback"""
-    from fastapi import HTTPException
-
     if not settings.gitlab_client_id:
         raise HTTPException(status_code=501, detail="GitLab OAuth not configured")
 
