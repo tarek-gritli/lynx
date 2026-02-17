@@ -122,7 +122,7 @@ async def github_callback(code: str, db: SessionDep):
         {"sub": str(user.id), "github_username": github_username}
     )
 
-    response = RedirectResponse(url=f"{settings.frontend_url}/auth/callback")
+    response = RedirectResponse(url=f"{settings.frontend_url}/dashboard")
     response.set_cookie(
         key=COOKIE_NAME,
         value=jwt_token,
@@ -269,7 +269,7 @@ async def gitlab_callback(code: str, db: SessionDep):
         {"sub": str(user.id), "gitlab_username": gitlab_username}
     )
 
-    response = RedirectResponse(url=f"{settings.frontend_url}/auth/callback")
+    response = RedirectResponse(url=f"{settings.frontend_url}/dashboard")
     response.set_cookie(
         key=COOKIE_NAME,
         value=jwt_token,

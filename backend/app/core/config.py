@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     encryption_key: str
     jwt_secret: str
     backend_url: str = "http://localhost:8000"
-    frontend_url: str = "http://localhost:3000"
+    frontend_url: str = "http://localhost:5173"
     environment: str = "development"
     port: int = 8000
     api_prefix: str = "/api/v1"
