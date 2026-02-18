@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { NotFound } from "@/components/not-found";
 import type { AuthState } from "../hooks/useAuth";
 
 interface RouterContext {
@@ -17,4 +18,5 @@ const RootLayout = () => (
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
+  notFoundComponent: NotFound,
 });
