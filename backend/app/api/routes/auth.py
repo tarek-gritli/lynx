@@ -301,5 +301,10 @@ async def get_current_user_info(current_user: CurrentUser):
 @router.post("/logout")
 async def logout(response: Response):
     """Clear auth cookie and logout user"""
-    response.delete_cookie(key=COOKIE_NAME)
+    response.delete_cookie(
+        key=COOKIE_NAME,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+    )
     return {"message": "Logged out successfully"}

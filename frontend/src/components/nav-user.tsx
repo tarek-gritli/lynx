@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const avatarUrl = user?.github_image_url || user?.gitlab_image_url;
   const username = user?.github_username || user?.gitlab_username || "User";
   const initials = username
@@ -54,7 +54,7 @@ export function NavUser() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -74,7 +74,7 @@ export function NavUser() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={logout}>
               <LogOut />
               Log out
             </DropdownMenuItem>

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, api } from "../lib/api";
 
 export interface User {
@@ -26,7 +26,18 @@ async function fetchCurrentUser(): Promise<User | null> {
   }
 }
 
-export function useAuth(): AuthState {
+async function logout(): Promise<void> {
+  try {
+    return await api.post("/auth/logout", {});
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return;
+    throw error;
+  }
+}
+
+export function useAuth(): AuthState & { logout: () => void } {
+  const queryClient = useQueryClient();
+
   const { data: user, isLoading } = useQuery({
     queryKey: ["currentUser"],
     queryFn: fetchCurrentUser,
@@ -34,5 +45,12 @@ export function useAuth(): AuthState {
     retry: false,
   });
 
-  return { user, isLoading };
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    },
+  });
+
+  return { user, isLoading, logout: logoutMutation.mutate };
 }
