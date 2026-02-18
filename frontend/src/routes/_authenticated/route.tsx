@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import AppSidebar from "@/components/app-sidebar";
-import MobileNavbar from "@/components/mobile-nav";
+import AppSidebar from "@/components/navigation/app-sidebar";
+import MobileNavbar from "@/components/navigation/mobile-nav";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ROUTES } from "@/lib/navigation";
 

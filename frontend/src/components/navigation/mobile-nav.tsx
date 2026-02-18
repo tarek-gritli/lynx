@@ -1,6 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
-import { useSidebar } from "./ui/sidebar";
+import { useSidebar } from "../ui/sidebar";
 
 export default function MobileNavbar() {
   const location = useLocation();
