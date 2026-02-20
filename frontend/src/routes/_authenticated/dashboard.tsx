@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import KPICard from "@/components/cards/kpi";
+import KPISkeleton from "@/components/cards/kpi-skeleton";
 import RecentReviewsTable from "@/components/tables/recent-reviews";
 import { Input } from "@/components/ui/input";
 import { useReviews } from "@/hooks/use-reviews";
@@ -18,9 +19,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function RouteComponent() {
-  const { stats, isLoading: statsLoading, isError: statsError } = useStats();
+  const { stats, isLoading: statsLoading } = useStats();
   const {
     reviews: recentReviews,
+
     pagination,
     isLoading: reviewsLoading,
   } = useReviews({ limit: 5 });
@@ -32,40 +34,28 @@ function RouteComponent() {
         icon: ChartColumnIncreasing,
         iconClass: "text-primary",
         value: stats.totalReviews,
-        change: {
-          value: stats.changes.totalReviews.percent,
-          direction: stats.changes.totalReviews.direction ?? "up",
-        },
+        change: stats.changes.totalReviews,
       },
       {
         title: "Successful Reviews",
         icon: CircleCheck,
         iconClass: "text-success",
         value: stats.successfulReviews,
-        change: {
-          value: stats.changes.successfulReviews.percent,
-          direction: stats.changes.successfulReviews.direction ?? "up",
-        },
+        change: stats.changes.successfulReviews,
       },
       {
         title: "Used Tokens",
         icon: Braces,
         iconClass: "text-warning",
         value: stats.totalTokens,
-        change: {
-          value: stats.changes.totalTokens.percent,
-          direction: stats.changes.totalTokens.direction ?? "up",
-        },
+        change: stats.changes.totalTokens,
       },
       {
         title: "Failed Reviews",
         icon: CircleX,
         iconClass: "text-destructive",
         value: stats.failedReviews,
-        change: {
-          value: stats.changes.failedReviews.percent,
-          direction: stats.changes.failedReviews.direction ?? "up",
-        },
+        change: stats.changes.failedReviews,
         inverted: true,
       },
     ],
@@ -95,17 +85,26 @@ function RouteComponent() {
         </div>
       </header>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {kpiCards.map((card, index) => (
-          <KPICard
-            key={`${card.title}-${index}`}
-            title={card.title}
-            icon={card.icon}
-            iconClass={card.iconClass}
-            value={card.value}
-            change={card.change}
-            inverted={card.inverted}
-          />
-        ))}
+        {statsLoading ? (
+          <>
+            <KPISkeleton />
+            <KPISkeleton />
+            <KPISkeleton />
+            <KPISkeleton />
+          </>
+        ) : (
+          kpiCards.map((card, index) => (
+            <KPICard
+              key={`${card.title}-${index}`}
+              title={card.title}
+              icon={card.icon}
+              iconClass={card.iconClass}
+              value={card.value}
+              change={card.change}
+              inverted={card.inverted}
+            />
+          ))
+        )}
       </div>
       <section className="mt-8">
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

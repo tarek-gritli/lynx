@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import TableSkeleton from "./table-skeleton";
 
 interface RecentReviewsTableProps {
   reviews: Review[];
@@ -24,13 +25,7 @@ export default function RecentReviewsTable({
   totalCount,
 }: RecentReviewsTableProps) {
   if (isLoading) {
-    return (
-      <div className="rounded-xl border border-primary/20 overflow-hidden">
-        <div className="p-8 text-center text-muted-foreground">
-          Loading reviews...
-        </div>
-      </div>
-    );
+    return <TableSkeleton rows={5} columns={4} showFooter />;
   }
 
   if (reviews.length === 0) {

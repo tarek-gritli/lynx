@@ -6,7 +6,7 @@ export default function KPICard(props: {
   icon: LucideIcon;
   iconClass: string;
   value: number;
-  change: { value: number; direction: string };
+  change: { percent: number; direction: "up" | "down" };
   inverted?: boolean;
 }) {
   return (
@@ -31,7 +31,7 @@ export default function KPICard(props: {
             )}
           >
             {props.change.direction === "up" ? "+" : "-"}
-            {props.change.value}%
+            {props.change.percent}%
           </span>
         )}
       </div>
