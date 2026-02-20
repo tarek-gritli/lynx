@@ -1,7 +1,7 @@
 const statusClasses = {
-  Passed: "bg-success/20 text-success",
-  Failed: "bg-destructive/20 text-destructive",
-  Pending: "bg-warning/20 text-warning",
+  success: "bg-success/20 text-success",
+  failed: "bg-destructive/20 text-destructive",
+  pending: "bg-warning/20 text-warning",
 };
 
 function StatusBadge({ status }: { status: string }) {

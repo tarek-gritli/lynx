@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { formatDistanceToNow } from "date-fns";
+import type { Review } from "@/hooks/use-reviews";
 import { ROUTES } from "@/lib/navigation";
 import { StatusBadge } from "../ui/badge";
 import {
@@ -10,17 +12,37 @@ import {
   TableRow,
 } from "../ui/table";
 
+interface RecentReviewsTableProps {
+  reviews: Review[];
+  isLoading?: boolean;
+  totalCount?: number;
+}
+
 export default function RecentReviewsTable({
   reviews,
-}: {
-  reviews: {
-    id: number;
-    repository: string;
-    status: string;
-    model: string;
-    time: string;
-  }[];
-}) {
+  isLoading = false,
+  totalCount,
+}: RecentReviewsTableProps) {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-primary/20 overflow-hidden">
+        <div className="p-8 text-center text-muted-foreground">
+          Loading reviews...
+        </div>
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="rounded-xl border border-primary/20 overflow-hidden">
+        <div className="p-8 text-center text-muted-foreground">
+          No reviews found
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-primary/20 overflow-hidden">
       <div className="overflow-x-auto">
@@ -36,7 +58,15 @@ export default function RecentReviewsTable({
           <TableBody>
             {reviews.map((review) => (
               <TableRow key={review.id}>
-                <TableCell className="p-4">{review.repository}</TableCell>
+                <TableCell className="p-4">
+                  <Link
+                    to={ROUTES.HISTORY}
+                    search={{ reviewId: review.id }}
+                    className="hover:underline"
+                  >
+                    {review.repo_name}
+                  </Link>
+                </TableCell>
                 <TableCell className="p-4">
                   <StatusBadge status={review.status} />
                 </TableCell>
@@ -46,7 +76,9 @@ export default function RecentReviewsTable({
                   </span>
                 </TableCell>
                 <TableCell className="p-4 text-muted-foreground">
-                  {review.time}
+                  {formatDistanceToNow(new Date(review.created_at), {
+                    addSuffix: true,
+                  })}
                 </TableCell>
               </TableRow>
             ))}
@@ -55,7 +87,7 @@ export default function RecentReviewsTable({
       </div>
       <div className="p-4 border-t border-primary/20 flex items-center justify-between text-sm text-muted-foreground">
         <p>
-          Showing {reviews.length} of {reviews.length} reviews
+          Showing {reviews.length} of {totalCount ?? reviews.length} reviews
         </p>
         <Link
           to={ROUTES.HISTORY}

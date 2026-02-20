@@ -10,52 +10,20 @@ import { useMemo, useState } from "react";
 import KPICard from "@/components/cards/kpi";
 import RecentReviewsTable from "@/components/tables/recent-reviews";
 import { Input } from "@/components/ui/input";
+import { useReviews } from "@/hooks/use-reviews";
 import { useStats } from "@/hooks/use-stats";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
 });
 
-const sampleReviews = [
-  {
-    id: 1,
-    repository: "lynx-core-api",
-    status: "Passed",
-    model: "GPT-4o",
-    time: "2 mins ago",
-  },
-  {
-    id: 2,
-    repository: "web-frontend-main",
-    status: "Failed",
-    model: "Claude-3.5",
-    time: "15 mins ago",
-  },
-  {
-    id: 3,
-    repository: "auth-service-v2",
-    status: "Passed",
-    model: "GPT-4o",
-    time: "45 mins ago",
-  },
-  {
-    id: 4,
-    repository: "data-pipeline-worker",
-    status: "Passed",
-    model: "GPT-4o",
-    time: "1 hour ago",
-  },
-  {
-    id: 5,
-    repository: "legacy-migration-tool",
-    status: "Failed",
-    model: "Llama-3",
-    time: "3 hours ago",
-  },
-];
-
 function RouteComponent() {
   const { stats, isLoading: statsLoading, isError: statsError } = useStats();
+  const {
+    reviews: recentReviews,
+    pagination,
+    isLoading: reviewsLoading,
+  } = useReviews({ limit: 5 });
   const [query, setQuery] = useState("");
   const kpiCards = useMemo(
     () => [
@@ -105,15 +73,15 @@ function RouteComponent() {
   );
   const filteredReviews = useMemo(
     () =>
-      sampleReviews.filter((r) => {
+      recentReviews.filter((r) => {
         const q = query.toLowerCase();
         return (
-          r.repository.toLowerCase().includes(q) ||
+          r.repo_name.toLowerCase().includes(q) ||
           r.model.toLowerCase().includes(q) ||
           r.status.toLowerCase().includes(q)
         );
       }),
-    [query],
+    [query, recentReviews],
   );
 
   return (
@@ -154,7 +122,11 @@ function RouteComponent() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           </div>
         </div>
-        <RecentReviewsTable reviews={filteredReviews} />
+        <RecentReviewsTable
+          reviews={filteredReviews}
+          isLoading={reviewsLoading}
+          totalCount={pagination?.total}
+        />
       </section>
     </main>
   );
