@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -130,8 +130,15 @@ def get_review_detail(
 def get_stats(
     db: SessionDep,
     current_user: CurrentUser,
+    window_days: int = Query(
+        7, ge=1, le=90, description="Rolling window in days for change computation"
+    ),
 ):
-    """Get usage statistics for the current user"""
+    """Get usage statistics for the current user.
+
+    Returns all-time totals plus period-over-period change computed for the last
+    ``window_days`` compared to the preceding window of the same length.
+    """
     total_reviews = db.query(Review).filter(Review.user_id == current_user.id).count()
     successful_reviews = (
         db.query(Review)
@@ -143,7 +150,6 @@ def get_stats(
         .filter(Review.user_id == current_user.id, Review.status == "failed")
         .count()
     )
-    pending_reviews = total_reviews - successful_reviews - failed_reviews
     total_tokens = (
         db.query(Review)
         .filter(Review.user_id == current_user.id)
@@ -151,11 +157,93 @@ def get_stats(
         .scalar()
         or 0
     )
+    
+    now = datetime.now(timezone.utc)
+    start_current = now - timedelta(days=window_days)
+    end_current = now
+    start_prev = start_current - timedelta(days=window_days)
+    end_prev = start_current
+
+    base = db.query(Review).filter(Review.user_id == current_user.id)
+
+    def count_in_range(q, start, end):
+        return q.filter(Review.created_at >= start, Review.created_at < end).count()
+
+    def sum_tokens_in_range(start, end):
+        return (
+            db.query(func.sum(Review.total_tokens))
+            .filter(
+                Review.user_id == current_user.id,
+                Review.created_at >= start,
+                Review.created_at < end,
+            )
+            .scalar()
+            or 0
+        )
+
+    curr_total_reviews = count_in_range(base, start_current, end_current)
+    curr_successful_reviews = count_in_range(
+        base.filter(Review.status == "success"), start_current, end_current
+    )
+    curr_failed_reviews = count_in_range(
+        base.filter(Review.status == "failed"), start_current, end_current
+    )
+    curr_total_tokens = sum_tokens_in_range(start_current, end_current)
+
+    prev_total_reviews = count_in_range(base, start_prev, end_prev)
+    prev_successful_reviews = count_in_range(
+        base.filter(Review.status == "success"), start_prev, end_prev
+    )
+    prev_failed_reviews = count_in_range(
+        base.filter(Review.status == "failed"), start_prev, end_prev
+    )
+    prev_total_tokens = sum_tokens_in_range(start_prev, end_prev)
+
+    def compute_change(curr: int, prev: int):
+        if prev <= 0 and curr <= 0:
+            return {"percent": 0, "direction": "up"}
+        if prev <= 0 and curr > 0:
+            return {"percent": 100, "direction": "up"}
+        delta = curr - prev
+        direction = "up" if delta >= 0 else "down"
+        pct = round(abs(delta) / prev * 100)
+        return {"percent": pct, "direction": direction}
+
+    changes = {
+        "total_reviews": compute_change(curr_total_reviews, prev_total_reviews),
+        "successful_reviews": compute_change(
+            curr_successful_reviews, prev_successful_reviews
+        ),
+        "failed_reviews": compute_change(curr_failed_reviews, prev_failed_reviews),
+        "total_tokens": compute_change(curr_total_tokens, prev_total_tokens),
+    }
 
     return {
         "total_reviews": total_reviews,
         "total_tokens": total_tokens,
         "successful_reviews": successful_reviews,
         "failed_reviews": failed_reviews,
-        "pending_reviews": pending_reviews,
+        "period": {
+            "window_days": window_days,
+            "current": {
+                "start": start_current.isoformat(),
+                "end": end_current.isoformat(),
+            },
+            "previous": {"start": start_prev.isoformat(), "end": end_prev.isoformat()},
+        },
+        "period_counts": {
+            "current": {
+                "total_reviews": curr_total_reviews,
+                "successful_reviews": curr_successful_reviews,
+                "failed_reviews": curr_failed_reviews,
+                "total_tokens": curr_total_tokens,
+            },
+            "previous": {
+                "total_reviews": prev_total_reviews,
+                "successful_reviews": prev_successful_reviews,
+                "failed_reviews": prev_failed_reviews,
+                "total_tokens": prev_total_tokens,
+            },
+        },
+        "changes": changes,
     }

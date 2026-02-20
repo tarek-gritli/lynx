@@ -10,41 +10,11 @@ import { useMemo, useState } from "react";
 import KPICard from "@/components/cards/kpi";
 import RecentReviewsTable from "@/components/tables/recent-reviews";
 import { Input } from "@/components/ui/input";
+import { useStats } from "@/hooks/use-stats";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
 });
-
-const kpiCards = [
-  {
-    title: "Total Reviews",
-    icon: ChartColumnIncreasing,
-    iconClass: "text-primary",
-    value: 1284,
-    change: { value: 12, direction: "up" },
-  },
-  {
-    title: "Successful Reviews",
-    icon: CircleCheck,
-    iconClass: "text-success",
-    value: 1150,
-    change: { value: 12, direction: "down" },
-  },
-  {
-    title: "Used Tokens",
-    icon: Braces,
-    iconClass: "text-warning",
-    value: 850000,
-    change: { value: 12, direction: "up" },
-  },
-  {
-    title: "Failed Reviews",
-    icon: CircleX,
-    iconClass: "text-destructive",
-    value: 134,
-    change: { value: 12, direction: "up" },
-  },
-];
 
 const sampleReviews = [
   {
@@ -85,7 +55,53 @@ const sampleReviews = [
 ];
 
 function RouteComponent() {
+  const { stats, isLoading: statsLoading, isError: statsError } = useStats();
   const [query, setQuery] = useState("");
+  const kpiCards = useMemo(
+    () => [
+      {
+        title: "Total Reviews",
+        icon: ChartColumnIncreasing,
+        iconClass: "text-primary",
+        value: stats.totalReviews,
+        change: {
+          value: stats.changes.totalReviews.percent,
+          direction: stats.changes.totalReviews.direction ?? "up",
+        },
+      },
+      {
+        title: "Successful Reviews",
+        icon: CircleCheck,
+        iconClass: "text-success",
+        value: stats.successfulReviews,
+        change: {
+          value: stats.changes.successfulReviews.percent,
+          direction: stats.changes.successfulReviews.direction ?? "up",
+        },
+      },
+      {
+        title: "Used Tokens",
+        icon: Braces,
+        iconClass: "text-warning",
+        value: stats.totalTokens,
+        change: {
+          value: stats.changes.totalTokens.percent,
+          direction: stats.changes.totalTokens.direction ?? "up",
+        },
+      },
+      {
+        title: "Failed Reviews",
+        icon: CircleX,
+        iconClass: "text-destructive",
+        value: stats.failedReviews,
+        change: {
+          value: stats.changes.failedReviews.percent,
+          direction: stats.changes.failedReviews.direction ?? "up",
+        },
+      },
+    ],
+    [stats],
+  );
   const filteredReviews = useMemo(
     () =>
       sampleReviews.filter((r) => {
