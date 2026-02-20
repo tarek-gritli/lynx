@@ -7,6 +7,7 @@ export default function KPICard(props: {
   iconClass: string;
   value: number;
   change: { value: number; direction: string };
+  inverted?: boolean;
 }) {
   return (
     <div className="p-6 rounded-xl border border-primary/20">
@@ -24,9 +25,9 @@ export default function KPICard(props: {
           <span
             className={cn(
               "text-xs font-bold px-1.5 py-0.5 rounded",
-              props.change.direction === "up"
+              (props.inverted ? props.change.direction === "down" : props.change.direction === "up")
                 ? "text-success bg-success/10"
-                : "text-destructive bg-destructive/10",
+                : "text-destructive bg-destructive/10"
             )}
           >
             {props.change.direction === "up" ? "+" : "-"}

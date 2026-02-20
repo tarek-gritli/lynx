@@ -98,6 +98,7 @@ function RouteComponent() {
           value: stats.changes.failedReviews.percent,
           direction: stats.changes.failedReviews.direction ?? "up",
         },
+        inverted: true,
       },
     ],
     [stats],
@@ -134,6 +135,7 @@ function RouteComponent() {
             iconClass={card.iconClass}
             value={card.value}
             change={card.change}
+            inverted={card.inverted}
           />
         ))}
       </div>
