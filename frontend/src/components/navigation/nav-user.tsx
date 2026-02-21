@@ -15,11 +15,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const avatarUrl = user?.github_image_url || user?.gitlab_image_url;
   const username = user?.github_username || user?.gitlab_username || "User";
   const initials = username
@@ -28,6 +29,25 @@ export function NavUser() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  if (isLoading) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            className="text-white cursor-default pointer-events-none"
+          >
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <div className="grid flex-1 gap-1.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
 
   return (
     <SidebarMenu>
