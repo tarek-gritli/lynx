@@ -1,6 +1,6 @@
 from typing import Literal
 
-Provider = Literal["openai", "gemini", "claude"]
+Provider = Literal["openai", "gemini", "anthropic"]
 
 OPENAI_MODELS: set[str] = {
     "gpt-5.2",
@@ -30,7 +30,7 @@ GEMINI_MODELS: set[str] = {
     "gemini-2.0-flash-lite",
 }
 
-CLAUDE_MODELS: set[str] = {
+ANTHROPIC_MODELS: set[str] = {
     "claude-opus-4-6",
     "claude-sonnet-4-5-20250929",
     "claude-haiku-4-5-20251001",
@@ -45,5 +45,5 @@ CLAUDE_MODELS: set[str] = {
 PROVIDER_MODELS: dict[str, set[str]] = {
     "openai": OPENAI_MODELS,
     "gemini": GEMINI_MODELS,
-    "claude": CLAUDE_MODELS,
+    "anthropic": ANTHROPIC_MODELS,
 }

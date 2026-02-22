@@ -255,7 +255,7 @@ def _format_multi_review(reviews: list[dict]) -> str:
     sections = []
 
     for review in reviews:
-        provider_emoji = {"openai": "🤖", "gemini": "✨", "claude": "🧠"}
+        provider_emoji = {"openai": "🤖", "gemini": "✨", "anthropic": "🧠"}
         emoji = provider_emoji.get(review["provider"], "🔍")
         provider_name = review["provider"].title()
 

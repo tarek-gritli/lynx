@@ -63,7 +63,7 @@ def validate_api_key(provider: str, api_key: str) -> tuple[bool, str]:
         return validate_openai_key(api_key)
     elif provider == "gemini":
         return validate_gemini_key(api_key)
-    elif provider == "claude":
+    elif provider == "anthropic":
         return validate_claude_key(api_key)
     else:
         return False, "Unsupported provider"

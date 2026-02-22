@@ -42,8 +42,8 @@ def get_review(diff: str, provider: str, model: str, api_key: str) -> ReviewResu
         result = get_openai_review(prompt, model, api_key)
     elif provider == "gemini":
         result = get_gemini_review(prompt, model, api_key)
-    elif provider == "claude":
-        result = get_claude_review(prompt, model, api_key)
+    elif provider == "anthropic":
+        result = get_anthropic_review(prompt, model, api_key)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
@@ -106,8 +106,8 @@ def get_gemini_review(prompt: str, model: str, api_key: str) -> ReviewResult | N
         raise RuntimeError(f"Gemini request failed {e}") from e
 
 
-def get_claude_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
-    """Get review from claude"""
+def get_anthropic_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
+    """Get review from Anthropic (Claude)"""
     try:
         client = Anthropic(api_key=api_key)
 
@@ -119,7 +119,7 @@ def get_claude_review(prompt: str, model: str, api_key: str) -> ReviewResult | N
 
         return {
             "review": response.content[0].text,
-            "provider": "claude",
+            "provider": "anthropic",
             "model": model,
             "tokens": {
                 "prompt": usage.input_tokens,
@@ -129,4 +129,4 @@ def get_claude_review(prompt: str, model: str, api_key: str) -> ReviewResult | N
         }
 
     except Exception as e:
-        raise RuntimeError(f"Claude request failed {e}") from e
+        raise RuntimeError(f"Anthropic request failed {e}") from e
