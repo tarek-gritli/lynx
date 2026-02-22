@@ -173,7 +173,7 @@ def bulk_set_api_keys(
                 )
                 continue
 
-            is_valid, message = validate_api_key(key_req.provider, key_req.api_key)
+            is_valid = validate_api_key(key_req.provider, key_req.api_key)
             if not is_valid:
                 errors.append(
                     {
