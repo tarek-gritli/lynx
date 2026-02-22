@@ -13,11 +13,12 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const hasBody = init.body !== undefined;
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(hasBody && { "Content-Type": "application/json" }),
       ...init.headers,
     },
   });
@@ -38,6 +39,13 @@ export const api = {
   post: <T>(path: string, body: unknown, init?: RequestInit) =>
     request<T>(path, { ...init, method: "POST", body: JSON.stringify(body) }),
 
-  delete: <T>(path: string, init?: RequestInit) =>
-    request<T>(path, { ...init, method: "DELETE" }),
+  patch: <T>(path: string, body: unknown, init?: RequestInit) =>
+    request<T>(path, { ...init, method: "PATCH", body: JSON.stringify(body) }),
+
+  delete: <T>(path: string, body?: unknown, init?: RequestInit) =>
+    request<T>(path, {
+      ...init,
+      method: "DELETE",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 };
