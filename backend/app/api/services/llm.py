@@ -23,7 +23,9 @@ class ReviewResult(TypedDict):
     tokens: TokenUsage
 
 
-def get_review(diff: str, provider: str, model: str, api_key: str) -> ReviewResult:
+def get_review(
+    diff: str, provider: str, model: str, api_key: str, template: str | None = None
+) -> ReviewResult:
     """Call LLM to get code review based on the provided diff.
 
     Returns:
@@ -33,7 +35,8 @@ def get_review(diff: str, provider: str, model: str, api_key: str) -> ReviewResu
         - model: The model used
         - tokens: Dict with prompt, completion, and total token counts
     """
-    prompt = REVIEW_PROMPT.format(diff=diff)
+    prompt_template = template if template else REVIEW_PROMPT
+    prompt = prompt_template.format(diff=diff)
     logger.debug(f"Requesting review from {provider} using model {model}")
 
     result: ReviewResult | None = None

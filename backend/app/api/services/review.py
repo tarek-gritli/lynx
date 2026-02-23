@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.logging import get_logger
-from app.models import APIKey, Review, User
+from app.models import APIKey, Review, Template, User
 from app.utils.crypto import decrypt_key
 
 from ..services.github import get_installation_client
@@ -156,6 +156,13 @@ def _generate_reviews(
     """Generate reviews from all configured API keys and save to database"""
     reviews = []
 
+    default_template = (
+        db.query(Template)
+        .filter(Template.user_id == user_id, Template.is_default == True)
+        .first()
+    )
+    template_content = default_template.content if default_template else None
+
     for api_key in api_keys:
         decrypted_api_key = decrypt_key(api_key.encrypted_key)
 
@@ -181,6 +188,7 @@ def _generate_reviews(
                 provider=api_key.provider,
                 model=api_key.model,
                 api_key=decrypted_api_key,
+                template=template_content,
             )
             logger.info(f"Review generated successfully using {api_key.provider}")
 

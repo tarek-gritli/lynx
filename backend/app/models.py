@@ -36,6 +36,9 @@ class User(Base):
     api_keys = relationship(
         "APIKey", back_populates="user", cascade="all, delete-orphan"
     )
+    templates = relationship(
+        "Template", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class APIKey(Base):
@@ -53,6 +56,23 @@ class APIKey(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="api_keys")
+
+
+class Template(Base):
+    __tablename__ = "templates"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_user_template_name"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    name = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    is_default = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="templates")
 
 
 class Review(Base):
