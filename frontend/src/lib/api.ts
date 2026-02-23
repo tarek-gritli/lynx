@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? "";
+import { API_URL } from "./constants";
 
 export class ApiError extends Error {
   public readonly status: number;
@@ -14,7 +14,7 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const hasBody = init.body !== undefined;
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${API_URL}${path}`, {
     ...init,
     credentials: "include",
     headers: {

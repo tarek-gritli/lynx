@@ -1,4 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Features } from "@/components/landing/features";
+import { Footer } from "@/components/landing/footer";
+import { Hero } from "@/components/landing/hero";
+import { TerminalDemo } from "@/components/landing/terminal-demo";
+import { TrustedBy } from "@/components/landing/trusted-by";
 
 export const Route = createFileRoute("/_unauthenticated/landing")({
   component: LandingPage,
@@ -6,8 +11,16 @@ export const Route = createFileRoute("/_unauthenticated/landing")({
 
 function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
-      <h1 className="text-4xl font-bold">Welcome to Lynx</h1>
-    </main>
+    <>
+      <main className="flex-1 pt-24 pb-20">
+        <div className="mx-auto max-w-300 px-6">
+          <Hero />
+          <Features />
+          <TerminalDemo />
+          <TrustedBy />
+        </div>
+      </main>
+      <Footer />
+    </>
   );
 }
