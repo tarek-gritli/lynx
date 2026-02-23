@@ -4,13 +4,16 @@ import { Button } from "@/components/ui/button";
 import type { Template } from "@/hooks/use-templates";
 import { useDefaultTemplate, useTemplates } from "@/hooks/use-templates";
 import { DefaultTemplateCard } from "./default-template-card";
+import { DefaultTemplateSkeleton } from "./default-template-skeleton";
 import { ResetDefaultButton } from "./reset-default-button";
 import { TemplateCard } from "./template-card";
 import { TemplateEditor } from "./template-editor";
+import { TemplateSkeleton } from "./template-skeleton";
 
 export function TemplateConfiguration() {
-	const { templates, isLoading } = useTemplates();
-	const { data: defaultTemplate } = useDefaultTemplate();
+	const { templates, isLoading: templatesLoading } = useTemplates();
+	const { data: defaultTemplate, isLoading: defaultLoading } =
+		useDefaultTemplate();
 	const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
 	const [isCreating, setIsCreating] = useState(false);
 
@@ -47,9 +50,13 @@ export function TemplateConfiguration() {
 			<div className="mb-6">
 				<div className="flex items-center justify-between mb-4">
 					<h3 className="text-lg font-semibold">Current Default Template</h3>
-					{defaultTemplate?.id && <ResetDefaultButton />}
+					{!defaultLoading && defaultTemplate?.id && <ResetDefaultButton />}
 				</div>
-				{defaultTemplate && <DefaultTemplateCard template={defaultTemplate} />}
+				{defaultLoading ? (
+					<DefaultTemplateSkeleton />
+				) : (
+					defaultTemplate && <DefaultTemplateCard template={defaultTemplate} />
+				)}
 			</div>
 
 			<div className="flex items-center justify-between mb-4">
@@ -80,8 +87,12 @@ export function TemplateConfiguration() {
 			)}
 
 			<div className="grid grid-cols-1 gap-4">
-				{isLoading ? (
-					<p className="text-muted-foreground text-sm">Loading templates...</p>
+				{templatesLoading ? (
+					<>
+						<TemplateSkeleton />
+						<TemplateSkeleton />
+						<TemplateSkeleton />
+					</>
 				) : templates && templates.length > 0 ? (
 					templates.map((template) => (
 						<TemplateCard
