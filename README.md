@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="lynx_logo.png" alt="Lynx Logo" width="300" height="300" />
+    <img src="assets/lynx_logo.png" alt="Lynx Logo" width="300" height="300" />
 </div>
 
 <p align="center">
