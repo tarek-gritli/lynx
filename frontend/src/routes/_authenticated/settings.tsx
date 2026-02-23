@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Shield } from "lucide-react";
 import { ProviderCard } from "@/components/cards/llm-provider";
+import { TemplateConfiguration } from "@/components/settings/templates/template-configuration";
+import { WebhookConfiguration } from "@/components/settings/webhooks/webhook-configuration";
 import {
   type Provider,
   useCurrentApiKeys,
@@ -88,6 +90,10 @@ function RouteComponent() {
           </div>
         </div>
       </div>
+
+      <TemplateConfiguration />
+
+      <WebhookConfiguration />
     </main>
   );
 }
