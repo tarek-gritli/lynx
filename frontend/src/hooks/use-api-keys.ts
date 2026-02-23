@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 
@@ -58,13 +58,13 @@ interface BulkSetApiKeysResponse {
 }
 
 export function useApiKeys() {
-	const queryClient = useQueryClient();
-
 	const setApiKeyMutation = useMutation({
 		mutationFn: (data: SetApiKeyRequest) => api.post("/settings/api-key", data),
+		meta: {
+			invalidates: [["current-api-keys"]],
+		},
 		onSuccess: () => {
 			toast.success("API key saved and validated successfully");
-			queryClient.invalidateQueries({ queryKey: ["current-api-keys"] });
 		},
 		onError: () => {
 			toast.error("Failed to save API key");
@@ -74,9 +74,11 @@ export function useApiKeys() {
 	const deleteApiKeyMutation = useMutation({
 		mutationFn: (data: DeleteApiKeyRequest) =>
 			api.delete("/settings/api-key", data),
+		meta: {
+			invalidates: [["current-api-keys"]],
+		},
 		onSuccess: () => {
 			toast.success("API key deleted successfully");
-			queryClient.invalidateQueries({ queryKey: ["current-api-keys"] });
 		},
 		onError: () => {
 			toast.error("Failed to delete API key");
@@ -86,11 +88,13 @@ export function useApiKeys() {
 	const toggleApiKeyMutation = useMutation({
 		mutationFn: (data: ToggleApiKeyRequest) =>
 			api.patch<ToggleApiKeyResponse>("/settings/api-key/toggle", data),
+		meta: {
+			invalidates: [["current-api-keys"]],
+		},
 		onSuccess: (response: ToggleApiKeyResponse) => {
 			toast.success(
 				`API key ${response.is_active ? "activated" : "deactivated"}`,
 			);
-			queryClient.invalidateQueries({ queryKey: ["current-api-keys"] });
 		},
 		onError: () => {
 			toast.error("Failed to toggle API key");
@@ -100,10 +104,12 @@ export function useApiKeys() {
 	const bulkSetApiKeysMutation = useMutation({
 		mutationFn: (data: BulkSetApiKeysRequest) =>
 			api.post<BulkSetApiKeysResponse>("/settings/api-keys/bulk", data),
+		meta: {
+			invalidates: [["current-api-keys"]],
+		},
 		onSuccess: (response: BulkSetApiKeysResponse) => {
 			if (response.successful > 0) {
 				toast.success(`${response.successful} API key(s) saved successfully`);
-				queryClient.invalidateQueries({ queryKey: ["current-api-keys"] });
 			}
 			if (response.failed > 0) {
 				response.errors.forEach((error: BulkSetApiKeysError) => {

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ApiError, api } from "@/lib/api";
 
 export interface Template {
@@ -48,66 +48,54 @@ export function useDefaultTemplate() {
 }
 
 export function useCreateTemplate() {
-	const queryClient = useQueryClient();
-
 	return useMutation({
 		mutationFn: (data: CreateTemplateRequest) =>
 			api.post<Template>("/templates/templates", data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["templates"] });
+		meta: {
+			invalidates: [["templates"]],
 		},
 	});
 }
 
 export function useUpdateTemplate() {
-	const queryClient = useQueryClient();
-
 	return useMutation({
 		mutationFn: ({ id, data }: { id: number; data: UpdateTemplateRequest }) =>
 			api.patch<Template>(`/templates/templates/${id}`, data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["templates"] });
+		meta: {
+			invalidates: [["templates"]],
 		},
 	});
 }
 
 export function useDeleteTemplate() {
-	const queryClient = useQueryClient();
-
 	return useMutation({
 		mutationFn: async (id: number) => {
 			await api.delete(`/templates/templates/${id}`);
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["templates"] });
+		meta: {
+			invalidates: [["templates"]],
 		},
 	});
 }
 
 export function useSetDefaultTemplate() {
-	const queryClient = useQueryClient();
-
 	return useMutation({
 		mutationFn: async (templateId: number) => {
 			await api.post("/templates/templates/set-default", {
 				template_id: templateId,
 			});
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["templates"] });
-			queryClient.invalidateQueries({ queryKey: ["templates", "default"] });
+		meta: {
+			invalidates: [["templates"], ["templates", "default"]],
 		},
 	});
 }
 
 export function useResetToSystemDefault() {
-	const queryClient = useQueryClient();
-
 	return useMutation({
 		mutationFn: () => api.post("/templates/templates/reset-default", {}),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["templates"] });
-			queryClient.invalidateQueries({ queryKey: ["templates", "default"] });
+		meta: {
+			invalidates: [["templates"], ["templates", "default"]],
 		},
 	});
 }

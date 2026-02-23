@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ApiError, api } from "../lib/api";
 
 export interface User {
@@ -36,8 +36,6 @@ async function logout(): Promise<void> {
 }
 
 export function useAuth(): AuthState & { logout: () => void } {
-	const queryClient = useQueryClient();
-
 	const { data: user, isLoading } = useQuery({
 		queryKey: ["currentUser"],
 		queryFn: fetchCurrentUser,
@@ -47,8 +45,8 @@ export function useAuth(): AuthState & { logout: () => void } {
 
 	const logoutMutation = useMutation({
 		mutationFn: logout,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+		meta: {
+			invalidates: [["currentUser"]],
 		},
 	});
 
