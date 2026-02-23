@@ -6,21 +6,21 @@ import { TerminalDemo } from "@/components/landing/terminal-demo";
 import { TrustedBy } from "@/components/landing/trusted-by";
 
 export const Route = createFileRoute("/_unauthenticated/landing")({
-  component: LandingPage,
+	component: LandingPage,
 });
 
 function LandingPage() {
-  return (
-    <>
-      <main className="flex-1 pt-24 pb-20">
-        <div className="mx-auto max-w-300 px-6">
-          <Hero />
-          <Features />
-          <TerminalDemo />
-          <TrustedBy />
-        </div>
-      </main>
-      <Footer />
-    </>
-  );
+	return (
+		<>
+			<main className="flex-1 pt-24 pb-20">
+				<div className="mx-auto max-w-300 px-6">
+					<Hero />
+					<Features />
+					<TerminalDemo />
+					<TrustedBy />
+				</div>
+			</main>
+			<Footer />
+		</>
+	);
 }

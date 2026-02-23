@@ -5,18 +5,18 @@ import { NotFound } from "@/components/not-found";
 import type { AuthState } from "../hooks/use-auth";
 
 interface RouterContext {
-  auth: AuthState;
-  queryClient: QueryClient;
+	auth: AuthState;
+	queryClient: QueryClient;
 }
 
 const RootLayout = () => (
-  <>
-    <Outlet />
-    <TanStackRouterDevtools />
-  </>
+	<>
+		<Outlet />
+		<TanStackRouterDevtools />
+	</>
 );
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  component: RootLayout,
-  notFoundComponent: NotFound,
+	component: RootLayout,
+	notFoundComponent: NotFound,
 });

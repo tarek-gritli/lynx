@@ -8,40 +8,39 @@ import { routeTree } from "./routeTree.gen";
 const queryClient = new QueryClient();
 
 const router = createRouter({
-  routeTree,
-  context: {
-    // biome-ignore lint/style/noNonNullAssertion: provided at runtime
-    auth: undefined!,
-    queryClient,
-  },
-  defaultPreload: "intent",
-  defaultPreloadStaleTime: 0,
+	routeTree,
+	context: {
+		auth: undefined!,
+		queryClient,
+	},
+	defaultPreload: "intent",
+	defaultPreloadStaleTime: 0,
 });
 
 declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
+	interface Register {
+		router: typeof router;
+	}
 }
 
 function AuthedRouterProvider() {
-  const auth = useAuth();
+	const auth = useAuth();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally depend on user identity only
-  useEffect(() => {
-    router.invalidate();
-  }, [auth.user]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally depend on user identity only
+	useEffect(() => {
+		router.invalidate();
+	}, [auth.user]);
 
-  return <RouterProvider router={router} context={{ auth, queryClient }} />;
+	return <RouterProvider router={router} context={{ auth, queryClient }} />;
 }
 
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Toaster position="top-right" />
-      <AuthedRouterProvider />
-    </QueryClientProvider>
-  );
+	return (
+		<QueryClientProvider client={queryClient}>
+			<Toaster position="top-right" />
+			<AuthedRouterProvider />
+		</QueryClientProvider>
+	);
 }
 
 export default App;

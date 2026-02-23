@@ -5,24 +5,24 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { ROUTES } from "@/lib/navigation";
 
 export const Route = createFileRoute("/_authenticated")({
-  component: RouteComponent,
-  beforeLoad: async ({ context: { auth } }) => {
-    if (!auth.isLoading && !auth.user) {
-      throw redirect({ to: ROUTES.LANDING });
-    }
-  },
+	component: RouteComponent,
+	beforeLoad: async ({ context: { auth } }) => {
+		if (!auth.isLoading && !auth.user) {
+			throw redirect({ to: ROUTES.LANDING });
+		}
+	},
 });
 
 function RouteComponent() {
-  return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main className="flex-1 overflow-auto">
-        <MobileNavbar />
-        <div className="p-6">
-          <Outlet />
-        </div>
-      </main>
-    </SidebarProvider>
-  );
+	return (
+		<SidebarProvider>
+			<AppSidebar />
+			<main className="flex-1 overflow-auto">
+				<MobileNavbar />
+				<div className="p-6">
+					<Outlet />
+				</div>
+			</main>
+		</SidebarProvider>
+	);
 }
