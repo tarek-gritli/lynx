@@ -1,5 +1,5 @@
 import { CalendarIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,11 +46,11 @@ export function MoreFiltersSheet({
 	const { data: supportedModels, isLoading: modelsLoading } =
 		useSupportedModels();
 
-	const allModels = useMemo(() => {
+	const allModels = (() => {
 		if (!supportedModels) return [];
 		const models = supportedModels.flatMap((provider) => provider.models);
 		return [...new Set(models)].sort(); // Remove duplicates and sort
-	}, [supportedModels]);
+	})();
 
 	const handleApply = () => {
 		onApplyFilters(localFilters);

@@ -6,7 +6,7 @@ import {
 	CircleX,
 	Search,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import KPICard from "@/components/cards/kpi";
 import KPISkeleton from "@/components/cards/kpi-skeleton";
 import RecentReviewsTable from "@/components/tables/recent-reviews";
@@ -27,52 +27,45 @@ function RouteComponent() {
 		isLoading: reviewsLoading,
 	} = useReviews({ limit: 5 });
 	const [query, setQuery] = useState("");
-	const kpiCards = useMemo(
-		() => [
-			{
-				title: "Total Reviews",
-				icon: ChartColumnIncreasing,
-				iconClass: "text-primary",
-				value: stats.totalReviews,
-				change: stats.changes.totalReviews,
-			},
-			{
-				title: "Successful Reviews",
-				icon: CircleCheck,
-				iconClass: "text-success",
-				value: stats.successfulReviews,
-				change: stats.changes.successfulReviews,
-			},
-			{
-				title: "Used Tokens",
-				icon: Braces,
-				iconClass: "text-warning",
-				value: stats.totalTokens,
-				change: stats.changes.totalTokens,
-			},
-			{
-				title: "Failed Reviews",
-				icon: CircleX,
-				iconClass: "text-destructive",
-				value: stats.failedReviews,
-				change: stats.changes.failedReviews,
-				inverted: true,
-			},
-		],
-		[stats],
-	);
-	const filteredReviews = useMemo(
-		() =>
-			recentReviews.filter((r) => {
-				const q = query.toLowerCase();
-				return (
-					r.repo_name.toLowerCase().includes(q) ||
-					r.model.toLowerCase().includes(q) ||
-					r.status.toLowerCase().includes(q)
-				);
-			}),
-		[query, recentReviews],
-	);
+	const kpiCards = [
+		{
+			title: "Total Reviews",
+			icon: ChartColumnIncreasing,
+			iconClass: "text-primary",
+			value: stats.totalReviews,
+			change: stats.changes.totalReviews,
+		},
+		{
+			title: "Successful Reviews",
+			icon: CircleCheck,
+			iconClass: "text-success",
+			value: stats.successfulReviews,
+			change: stats.changes.successfulReviews,
+		},
+		{
+			title: "Used Tokens",
+			icon: Braces,
+			iconClass: "text-warning",
+			value: stats.totalTokens,
+			change: stats.changes.totalTokens,
+		},
+		{
+			title: "Failed Reviews",
+			icon: CircleX,
+			iconClass: "text-destructive",
+			value: stats.failedReviews,
+			change: stats.changes.failedReviews,
+			inverted: true,
+		},
+	];
+	const filteredReviews = recentReviews.filter((r) => {
+		const q = query.toLowerCase();
+		return (
+			r.repo_name.toLowerCase().includes(q) ||
+			r.model.toLowerCase().includes(q) ||
+			r.status.toLowerCase().includes(q)
+		);
+	});
 
 	return (
 		<main className="flex-1 overflow-y-auto p-4 md:p-8">
