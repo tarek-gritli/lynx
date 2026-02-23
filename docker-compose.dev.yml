@@ -13,16 +13,18 @@ services:
       GITHUB_PRIVATE_KEY_PATH: /app/github-app-key.pem
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      ENVIRONMENT: ${ENVIRONMENT}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GITLAB_CLIENT_ID: ${GITLAB_CLIENT_ID}
       GITLAB_CLIENT_SECRET: ${GITLAB_CLIENT_SECRET}
       GITLAB_WEBHOOK_SECRET: ${GITLAB_WEBHOOK_SECRET}
-      GITLAB_URL: ${GITLAB_URL}
+      GITLAB_URL: ${GITLAB_URL:-https://gitlab.com}
       JWT_SECRET: ${JWT_SECRET}
-      BACKEND_URL: ${BACKEND_URL}
-      FRONTEND_URL: ${FRONTEND_URL}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - "${PORT:-8000}:80"
     depends_on:
       db:
         condition: service_healthy
@@ -31,36 +33,22 @@ services:
       - ${GITHUB_PRIVATE_KEY_PATH}:/app/github-app-key.pem:ro
     networks:
       - lynx-network
-      - proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.lynx-backend.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.lynx-backend.entrypoints=websecure"
-      - "traefik.http.routers.lynx-backend.tls.certresolver=mytlschallenge"
-      - "traefik.http.services.lynx-backend.loadbalancer.server.port=80"
-      - "traefik.docker.network=proxy"
 
   lynx-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api/v1}
     container_name: lynx-frontend
+    ports:
+      - "5173:80"
     depends_on:
       - lynx-backend
     restart: unless-stopped
     networks:
       - lynx-network
-      - proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.lynx-frontend.rule=Host(`${DOMAIN_NAME}`)"
-      - "traefik.http.routers.lynx-frontend.entrypoints=websecure"
-      - "traefik.http.routers.lynx-frontend.tls.certresolver=mytlschallenge"
-      - "traefik.http.routers.lynx-frontend.priority=1"
-      - "traefik.http.services.lynx-frontend.loadbalancer.server.port=80"
-      - "traefik.docker.network=proxy"
+
   db:
     image: postgres:17-alpine
     container_name: lynx-db
@@ -88,5 +76,3 @@ volumes:
 networks:
   lynx-network:
     driver: bridge
-  proxy:
-    external: true

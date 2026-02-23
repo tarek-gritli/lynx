@@ -40,9 +40,53 @@
 
 - **Security:** OAuth 2.0, encrypted API keys (Fernet), webhook signature verification
 
-## Quick Setup
+## Deployment
 
-Copy `.env.example` to `.env` and configure. Both backend and frontend read from the root `.env` file.
+### Option 1: Development (Local)
+
+For local development without HTTPS:
+
+```bash
+# Copy and configure environment
+cp .env.example .env
+
+# Start services
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+Access at `http://localhost:5173` (frontend) and `http://localhost:8000` (backend)
+
+### Option 2: Production with Existing Traefik
+
+If you already have Traefik running with a `proxy` network:
+
+```bash
+# Configure .env with your domain
+DOMAIN_NAME=yourdomain.com
+VITE_API_URL=https://yourdomain.com/api/v1
+BACKEND_URL=https://yourdomain.com/api/v1
+FRONTEND_URL=https://yourdomain.com
+COOKIE_SECURE=True
+COOKIE_SAMESITE=lax
+
+# Start services
+docker-compose up -d
+```
+
+### Option 3: Production with Fresh Traefik
+
+First, deploy Traefik:
+
+```bash
+# Configure Traefik credentials
+SSL_EMAIL=your@email.com
+DOMAIN_NAME=yourdomain.com
+CF_DNS_API_TOKEN=your_cloudflare_api_token
+# Start Traefik
+docker-compose -f docker-compose.traefik.yml up -d
+```
+
+Then deploy Lynx using Option 2 above.
 
 ## Support
 
