@@ -45,7 +45,7 @@ const WEBHOOK_CONFIGS: WebhookConfig[] = [
 
 export function WebhookConfiguration() {
 	return (
-		<section className="mt-12">
+		<section>
 			<header className="mb-6">
 				<h2 className="text-xl md:text-2xl font-bold">Webhook Configuration</h2>
 				<p className="text-muted-foreground mt-2">

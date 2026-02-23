@@ -43,16 +43,16 @@ export function TemplateCard({ template, onEdit }: TemplateCardProps) {
 
 	return (
 		<article className="border border-border rounded-xl p-6 bg-card">
-			<div className="flex items-center justify-between mb-4">
-				<div className="flex items-center gap-2">
-					<h4 className="font-bold">{template.name}</h4>
+			<div className="flex items-center justify-between mb-4 gap-4">
+				<div className="flex items-center gap-2 min-w-0 flex-1">
+					<h4 className="font-bold truncate">{template.name}</h4>
 					{template.is_default && (
-						<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+						<span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded whitespace-nowrap">
 							Default
 						</span>
 					)}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2 shrink-0">
 					{!template.is_default && (
 						<Button
 							variant="outline"
@@ -62,7 +62,7 @@ export function TemplateCard({ template, onEdit }: TemplateCardProps) {
 							className="flex items-center gap-2"
 						>
 							<Star className="size-4" />
-							Set Default
+							<span className="hidden md:block">Set Default</span>
 						</Button>
 					)}
 					<Button variant="outline" size="sm" onClick={() => onEdit(template)}>

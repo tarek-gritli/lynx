@@ -18,7 +18,7 @@ export function TemplateConfiguration() {
 	const [isCreating, setIsCreating] = useState(false);
 
 	return (
-		<section className="mt-12">
+		<section>
 			<header className="mb-6">
 				<h2 className="text-xl md:text-2xl font-bold">
 					Review Template Customization

@@ -165,7 +165,7 @@ export function ProviderCard({
 								onValueChange={setModel}
 								disabled={models.length === 0}
 							>
-								<SelectTrigger id={`${provider}-model`}>
+								<SelectTrigger id={`${provider}-model`} className="w-full">
 									<SelectValue placeholder="Select a model" />
 								</SelectTrigger>
 								<SelectContent>

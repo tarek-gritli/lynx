@@ -41,20 +41,25 @@ function RouteComponent() {
 			</header>
 
 			<Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-				<TabsList className="mb-6">
-					<TabsTrigger value="api" className="gap-2">
-						<Key className="size-4" />
-						API Keys
-					</TabsTrigger>
-					<TabsTrigger value="templates" className="gap-2">
-						<ScrollText className="size-4" />
-						Templates
-					</TabsTrigger>
-					<TabsTrigger value="webhooks" className="gap-2">
-						<Webhook className="size-4" />
-						Webhooks
-					</TabsTrigger>
-				</TabsList>
+				<div className="w-full overflow-x-auto mb-4">
+					<TabsList className="w-full sm:w-fit">
+						<TabsTrigger value="api" className="gap-2 flex-1 sm:flex-initial">
+							<Key className="size-4" />
+							<span className="hidden xs:inline sm:inline">API Keys</span>
+							<span className="inline xs:hidden sm:hidden">API</span>
+						</TabsTrigger>
+						<TabsTrigger value="templates" className="gap-2 flex-1 sm:flex-initial">
+							<ScrollText className="size-4" />
+							<span className="hidden xs:inline sm:inline">Templates</span>
+							<span className="inline xs:hidden sm:hidden">Tmpl</span>
+						</TabsTrigger>
+						<TabsTrigger value="webhooks" className="gap-2 flex-1 sm:flex-initial">
+							<Webhook className="size-4" />
+							<span className="hidden xs:inline sm:inline">Webhooks</span>
+							<span className="inline xs:hidden sm:hidden">Hook</span>
+						</TabsTrigger>
+					</TabsList>
+				</div>
 
 				<TabsContent value="api">
 					<ApiConfiguration />
