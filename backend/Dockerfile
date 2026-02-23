@@ -14,9 +14,19 @@ RUN poetry config virtualenvs.create false \
 
 # Copy application
 COPY app/ ./app/
+COPY alembic.ini ./
 
 # Expose port
 EXPOSE 80
 
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Running database migrations..."\n\
+alembic upgrade head\n\
+echo "Starting application..."\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port 80' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
 # Run
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["/entrypoint.sh"]
