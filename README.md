@@ -28,8 +28,6 @@
 - **🌐 Multi-Platform** — GitHub and GitLab (cloud + self-hosted)
 - **🧩 API-First** — Clean REST API, ready for your own dashboard
 
-> **Note:** This is the backend API. A web dashboard is coming soon.
-
 ---
 
 ## Features
@@ -41,6 +39,10 @@
 - **LLM Providers:** OpenAI, Gemini, Claude
 
 - **Security:** OAuth 2.0, encrypted API keys (Fernet), webhook signature verification
+
+## Quick Setup
+
+Copy `.env.example` to `.env` and configure. Both backend and frontend read from the root `.env` file.
 
 ## Support
 
