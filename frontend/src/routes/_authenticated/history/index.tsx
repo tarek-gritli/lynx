@@ -8,7 +8,7 @@ import { ReviewsTable } from "@/components/tables/reviews-table";
 import type { ReviewFilters, ReviewStatus } from "@/hooks/use-reviews";
 import { useReviews } from "@/hooks/use-reviews";
 
-export const Route = createFileRoute("/_authenticated/history")({
+export const Route = createFileRoute("/_authenticated/history/")({
   component: HistoryPage,
 });
 

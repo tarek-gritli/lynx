@@ -3,6 +3,7 @@ import { History, LayoutDashboard, Settings } from "lucide-react";
 export const ROUTES = {
   DASHBOARD: "/dashboard",
   HISTORY: "/history",
+  REVIEW_DETAIL: (reviewId: number) => `/history/${reviewId}`,
   SETTINGS: "/settings",
   LANDING: "/landing",
 };

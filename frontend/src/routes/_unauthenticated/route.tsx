@@ -1,5 +1,5 @@
-import { ROUTES } from "@/lib/navigation";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { ROUTES } from "@/lib/navigation";
 
 export const Route = createFileRoute("/_unauthenticated")({
   component: () => <Outlet />,

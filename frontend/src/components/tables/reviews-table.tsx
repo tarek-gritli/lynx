@@ -87,7 +87,7 @@ export function ReviewsTable({
                   })}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Link to={ROUTES.HISTORY} search={{ reviewId: review.id }}>
+                  <Link to={ROUTES.REVIEW_DETAIL(review.id)}>
                     <Button variant="link" size="sm" className="text-primary">
                       View Details
                     </Button>

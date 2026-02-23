@@ -14,8 +14,10 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UnauthenticatedLandingRouteImport } from './routes/_unauthenticated/landing'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedHistoryRouteRouteImport } from './routes/_authenticated/history/route'
+import { Route as AuthenticatedHistoryIndexRouteImport } from './routes/_authenticated/history/index'
+import { Route as AuthenticatedHistoryReviewIdRouteImport } from './routes/_authenticated/history/$reviewId'
 
 const UnauthenticatedRouteRoute = UnauthenticatedRouteRouteImport.update({
   id: '/_unauthenticated',
@@ -40,55 +42,88 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHistoryRouteRoute =
+  AuthenticatedHistoryRouteRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedHistoryIndexRoute =
+  AuthenticatedHistoryIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedHistoryRouteRoute,
+  } as any)
+const AuthenticatedHistoryReviewIdRoute =
+  AuthenticatedHistoryReviewIdRouteImport.update({
+    id: '/$reviewId',
+    path: '/$reviewId',
+    getParentRoute: () => AuthenticatedHistoryRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/history': typeof AuthenticatedHistoryRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/history': typeof AuthenticatedHistoryRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/landing': typeof UnauthenticatedLandingRoute
+  '/history/$reviewId': typeof AuthenticatedHistoryReviewIdRoute
+  '/history/': typeof AuthenticatedHistoryIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/history': typeof AuthenticatedHistoryRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/landing': typeof UnauthenticatedLandingRoute
+  '/history/$reviewId': typeof AuthenticatedHistoryReviewIdRoute
+  '/history': typeof AuthenticatedHistoryIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_unauthenticated': typeof UnauthenticatedRouteRouteWithChildren
+  '/_authenticated/history': typeof AuthenticatedHistoryRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_unauthenticated/landing': typeof UnauthenticatedLandingRoute
+  '/_authenticated/history/$reviewId': typeof AuthenticatedHistoryReviewIdRoute
+  '/_authenticated/history/': typeof AuthenticatedHistoryIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/history' | '/settings' | '/landing'
+  fullPaths:
+    | '/'
+    | '/history'
+    | '/dashboard'
+    | '/settings'
+    | '/landing'
+    | '/history/$reviewId'
+    | '/history/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/history' | '/settings' | '/landing'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/settings'
+    | '/landing'
+    | '/history/$reviewId'
+    | '/history'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_unauthenticated'
-    | '/_authenticated/dashboard'
     | '/_authenticated/history'
+    | '/_authenticated/dashboard'
     | '/_authenticated/settings'
     | '/_unauthenticated/landing'
+    | '/_authenticated/history/$reviewId'
+    | '/_authenticated/history/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -134,13 +169,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/history': {
-      id: '/_authenticated/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -148,18 +176,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/history/': {
+      id: '/_authenticated/history/'
+      path: '/'
+      fullPath: '/history/'
+      preLoaderRoute: typeof AuthenticatedHistoryIndexRouteImport
+      parentRoute: typeof AuthenticatedHistoryRouteRoute
+    }
+    '/_authenticated/history/$reviewId': {
+      id: '/_authenticated/history/$reviewId'
+      path: '/$reviewId'
+      fullPath: '/history/$reviewId'
+      preLoaderRoute: typeof AuthenticatedHistoryReviewIdRouteImport
+      parentRoute: typeof AuthenticatedHistoryRouteRoute
+    }
   }
 }
 
+interface AuthenticatedHistoryRouteRouteChildren {
+  AuthenticatedHistoryReviewIdRoute: typeof AuthenticatedHistoryReviewIdRoute
+  AuthenticatedHistoryIndexRoute: typeof AuthenticatedHistoryIndexRoute
+}
+
+const AuthenticatedHistoryRouteRouteChildren: AuthenticatedHistoryRouteRouteChildren =
+  {
+    AuthenticatedHistoryReviewIdRoute: AuthenticatedHistoryReviewIdRoute,
+    AuthenticatedHistoryIndexRoute: AuthenticatedHistoryIndexRoute,
+  }
+
+const AuthenticatedHistoryRouteRouteWithChildren =
+  AuthenticatedHistoryRouteRoute._addFileChildren(
+    AuthenticatedHistoryRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedHistoryRouteRoute: typeof AuthenticatedHistoryRouteRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedHistoryRouteRoute: AuthenticatedHistoryRouteRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 

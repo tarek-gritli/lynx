@@ -55,8 +55,7 @@ export default function RecentReviewsTable({
               <TableRow key={review.id}>
                 <TableCell className="p-4">
                   <Link
-                    to={ROUTES.HISTORY}
-                    search={{ reviewId: review.id }}
+                    to={ROUTES.REVIEW_DETAIL(review.id)}
                     className="hover:underline"
                   >
                     {review.repo_name}
