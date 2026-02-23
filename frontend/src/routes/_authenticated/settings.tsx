@@ -1,15 +1,35 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Key, ScrollText, Webhook } from "lucide-react";
 import { ApiConfiguration } from "@/components/settings/api-configuration";
 import { TemplateConfiguration } from "@/components/settings/templates/template-configuration";
 import { WebhookConfiguration } from "@/components/settings/webhooks/webhook-configuration";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+type TabValue = "api" | "templates" | "webhooks";
+
+interface SettingsSearch {
+	tab?: TabValue;
+}
+
 export const Route = createFileRoute("/_authenticated/settings")({
+	validateSearch: (search: Record<string, unknown>): SettingsSearch => {
+		return {
+			tab: (search.tab as TabValue) || "api",
+		};
+	},
 	component: RouteComponent,
 });
 
 function RouteComponent() {
+	const navigate = useNavigate({ from: Route.fullPath });
+	const { tab } = Route.useSearch();
+
+	const handleTabChange = (value: string) => {
+		navigate({
+			search: { tab: value as TabValue },
+		});
+	};
+
 	return (
 		<main className="flex-1 overflow-y-auto p-4 md:p-8">
 			<header className="mb-8">
@@ -20,7 +40,7 @@ function RouteComponent() {
 				</p>
 			</header>
 
-			<Tabs defaultValue="api" className="w-full">
+			<Tabs value={tab} onValueChange={handleTabChange} className="w-full">
 				<TabsList className="mb-6">
 					<TabsTrigger value="api" className="gap-2">
 						<Key className="size-4" />
