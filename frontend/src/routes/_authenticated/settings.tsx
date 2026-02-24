@@ -48,12 +48,18 @@ function RouteComponent() {
 							<span className="hidden xs:inline sm:inline">API Keys</span>
 							<span className="inline xs:hidden sm:hidden">API</span>
 						</TabsTrigger>
-						<TabsTrigger value="templates" className="gap-2 flex-1 sm:flex-initial">
+						<TabsTrigger
+							value="templates"
+							className="gap-2 flex-1 sm:flex-initial"
+						>
 							<ScrollText className="size-4" />
 							<span className="hidden xs:inline sm:inline">Templates</span>
 							<span className="inline xs:hidden sm:hidden">Tmpl</span>
 						</TabsTrigger>
-						<TabsTrigger value="webhooks" className="gap-2 flex-1 sm:flex-initial">
+						<TabsTrigger
+							value="webhooks"
+							className="gap-2 flex-1 sm:flex-initial"
+						>
 							<Webhook className="size-4" />
 							<span className="hidden xs:inline sm:inline">Webhooks</span>
 							<span className="inline xs:hidden sm:hidden">Hook</span>
