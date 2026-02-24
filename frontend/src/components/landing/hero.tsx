@@ -11,8 +11,8 @@ export function Hero() {
 	};
 
 	return (
-		<header className="flex flex-col items-center justify-center text-center py-12 md:py-24">
-			<img src="/vite.svg" alt="Lynx Logo" className="mb-12 size-20" />
+		<header className="flex flex-col items-center justify-center text-center py-8 md:py-12">
+			<img src="/lynx.png" alt="Lynx Logo" className="mb-4 size-60" />
 
 			<h1 className="text-4xl md:text-6xl font-black tracking-tight mb-6 bg-linear-to-b from-white to-gray-500 bg-clip-text text-transparent">
 				Sharp-eyed AI code review.
@@ -43,9 +43,6 @@ export function Hero() {
 					<Gitlab className="w-4 h-4" />
 					Log in with GitLab
 				</button>
-				<p className="mt-4 text-xs text-muted-foreground uppercase tracking-widest">
-					Enterprise SSO available
-				</p>
 			</section>
 		</header>
 	);

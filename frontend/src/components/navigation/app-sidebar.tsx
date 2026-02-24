@@ -31,8 +31,8 @@ export default function AppSidebar({
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>
 							<Link to={ROUTES.DASHBOARD} className="flex items-center gap-3">
-								<div className="flex aspect-square size-8 items-center justify-center rounded-lg text-primary-foreground">
-									<img src="/vite.svg" alt="Lynx logo" className="size-5" />
+								<div className="flex aspect-square items-center justify-center rounded-lg text-primary-foreground">
+									<img src="/lynx.png" alt="Lynx logo" className="size-15" />
 								</div>
 								<div className="flex flex-col gap-0.5 leading-none">
 									<span className="font-semibold">Lynx</span>
