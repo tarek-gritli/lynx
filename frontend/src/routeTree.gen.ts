@@ -13,6 +13,7 @@ import { Route as UnauthenticatedRouteRouteImport } from './routes/_unauthentica
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UnauthenticatedLandingRouteImport } from './routes/_unauthenticated/landing'
+import { Route as UnauthenticatedAuthErrorRouteImport } from './routes/_unauthenticated/auth-error'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHistoryRouteRouteImport } from './routes/_authenticated/history/route'
@@ -37,6 +38,12 @@ const UnauthenticatedLandingRoute = UnauthenticatedLandingRouteImport.update({
   path: '/landing',
   getParentRoute: () => UnauthenticatedRouteRoute,
 } as any)
+const UnauthenticatedAuthErrorRoute =
+  UnauthenticatedAuthErrorRouteImport.update({
+    id: '/auth-error',
+    path: '/auth-error',
+    getParentRoute: () => UnauthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof AuthenticatedHistoryRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/auth-error': typeof UnauthenticatedAuthErrorRoute
   '/landing': typeof UnauthenticatedLandingRoute
   '/history/$reviewId': typeof AuthenticatedHistoryReviewIdRoute
   '/history/': typeof AuthenticatedHistoryIndexRoute
@@ -79,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/auth-error': typeof UnauthenticatedAuthErrorRoute
   '/landing': typeof UnauthenticatedLandingRoute
   '/history/$reviewId': typeof AuthenticatedHistoryReviewIdRoute
   '/history': typeof AuthenticatedHistoryIndexRoute
@@ -91,6 +100,7 @@ export interface FileRoutesById {
   '/_authenticated/history': typeof AuthenticatedHistoryRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_unauthenticated/auth-error': typeof UnauthenticatedAuthErrorRoute
   '/_unauthenticated/landing': typeof UnauthenticatedLandingRoute
   '/_authenticated/history/$reviewId': typeof AuthenticatedHistoryReviewIdRoute
   '/_authenticated/history/': typeof AuthenticatedHistoryIndexRoute
@@ -102,6 +112,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/dashboard'
     | '/settings'
+    | '/auth-error'
     | '/landing'
     | '/history/$reviewId'
     | '/history/'
@@ -110,6 +121,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/settings'
+    | '/auth-error'
     | '/landing'
     | '/history/$reviewId'
     | '/history'
@@ -121,6 +133,7 @@ export interface FileRouteTypes {
     | '/_authenticated/history'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
+    | '/_unauthenticated/auth-error'
     | '/_unauthenticated/landing'
     | '/_authenticated/history/$reviewId'
     | '/_authenticated/history/'
@@ -160,6 +173,13 @@ declare module '@tanstack/react-router' {
       path: '/landing'
       fullPath: '/landing'
       preLoaderRoute: typeof UnauthenticatedLandingRouteImport
+      parentRoute: typeof UnauthenticatedRouteRoute
+    }
+    '/_unauthenticated/auth-error': {
+      id: '/_unauthenticated/auth-error'
+      path: '/auth-error'
+      fullPath: '/auth-error'
+      preLoaderRoute: typeof UnauthenticatedAuthErrorRouteImport
       parentRoute: typeof UnauthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -232,10 +252,12 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface UnauthenticatedRouteRouteChildren {
+  UnauthenticatedAuthErrorRoute: typeof UnauthenticatedAuthErrorRoute
   UnauthenticatedLandingRoute: typeof UnauthenticatedLandingRoute
 }
 
 const UnauthenticatedRouteRouteChildren: UnauthenticatedRouteRouteChildren = {
+  UnauthenticatedAuthErrorRoute: UnauthenticatedAuthErrorRoute,
   UnauthenticatedLandingRoute: UnauthenticatedLandingRoute,
 }
 

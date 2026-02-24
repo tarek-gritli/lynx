@@ -39,38 +39,48 @@ async def github_login():
 @router.get("/github/callback")
 async def github_callback(code: str, db: SessionDep):
     """Handle GitHub OAuth callback"""
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            GITHUB_TOKEN_URL,
-            data={
-                "client_id": settings.github_client_id,
-                "client_secret": settings.github_client_secret,
-                "code": code,
-            },
-            headers={"Accept": "application/json"},
+    try:
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                GITHUB_TOKEN_URL,
+                data={
+                    "client_id": settings.github_client_id,
+                    "client_secret": settings.github_client_secret,
+                    "code": code,
+                },
+                headers={"Accept": "application/json"},
+            )
+
+        if token_response.status_code != 200:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth-error?provider=GitHub"
+            )
+
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
+
+        if not access_token:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth-error?provider=GitHub"
+            )
+
+        async with httpx.AsyncClient() as client:
+            user_response = await client.get(
+                GITHUB_USER_URL,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                },
+            )
+
+        if user_response.status_code != 200:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth-error?provider=GitHub"
+            )
+    except Exception as e:
+        return RedirectResponse(
+            url=f"{settings.frontend_url}/auth-error?provider=GitHub"
         )
-
-    if token_response.status_code != 200:
-
-        raise HTTPException(status_code=400, detail="Failed to get access token")
-
-    token_data = token_response.json()
-    access_token = token_data.get("access_token")
-
-    if not access_token:
-        raise HTTPException(status_code=400, detail="No access token received")
-
-    async with httpx.AsyncClient() as client:
-        user_response = await client.get(
-            GITHUB_USER_URL,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json",
-            },
-        )
-
-    if user_response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to get user info")
 
     github_user = user_response.json()
     github_id = github_user["id"]
@@ -155,56 +165,65 @@ async def gitlab_login():
 async def gitlab_callback(code: str, db: SessionDep):
     """Handle GitLab OAuth callback"""
     if not settings.gitlab_client_id:
-        raise HTTPException(status_code=501, detail="GitLab OAuth not configured")
-
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            GITLAB_TOKEN_URL,
-            data={
-                "client_id": settings.gitlab_client_id,
-                "client_secret": settings.gitlab_client_secret,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": f"{settings.backend_url}/auth/gitlab/callback",
-            },
-            headers={"Accept": "application/json"},
+        return RedirectResponse(
+            url=f"{settings.frontend_url}/auth-error?provider=GitLab"
         )
 
-    if token_response.status_code != 200:
-        raise HTTPException(
-            status_code=400, detail="Failed to get access token from GitLab"
-        )
+    try:
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                GITLAB_TOKEN_URL,
+                data={
+                    "client_id": settings.gitlab_client_id,
+                    "client_secret": settings.gitlab_client_secret,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": f"{settings.backend_url}/auth/gitlab/callback",
+                },
+                headers={"Accept": "application/json"},
+            )
 
-    token_data = token_response.json()
+        if token_response.status_code != 200:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth-error?provider=GitLab"
+            )
 
-    access_token = token_data.get("access_token")
-    refresh_token = token_data.get("refresh_token")
-    expires_in = token_data.get("expires_in")
+        token_data = token_response.json()
 
-    if not access_token:
-        raise HTTPException(
-            status_code=400, detail="No access token received from GitLab"
-        )
+        access_token = token_data.get("access_token")
+        refresh_token = token_data.get("refresh_token")
+        expires_in = token_data.get("expires_in")
 
-    token_expires_at = None
-    if expires_in:
-        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+        if not access_token:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth-error?provider=GitLab"
+            )
 
-    encrypted_access_token = encrypt_key(access_token)
-    encrypted_refresh_token = encrypt_key(refresh_token) if refresh_token else None
+        token_expires_at = None
+        if expires_in:
+            token_expires_at = datetime.now(timezone.utc) + timedelta(
+                seconds=expires_in
+            )
 
-    async with httpx.AsyncClient() as client:
-        user_response = await client.get(
-            GITLAB_USER_URL,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json",
-            },
-        )
+        encrypted_access_token = encrypt_key(access_token)
+        encrypted_refresh_token = encrypt_key(refresh_token) if refresh_token else None
 
-    if user_response.status_code != 200:
-        raise HTTPException(
-            status_code=400, detail="Failed to get user info from GitLab"
+        async with httpx.AsyncClient() as client:
+            user_response = await client.get(
+                GITLAB_USER_URL,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                },
+            )
+
+        if user_response.status_code != 200:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth-error?provider=GitLab"
+            )
+    except Exception:
+        return RedirectResponse(
+            url=f"{settings.frontend_url}/auth-error?provider=GitLab"
         )
 
     gitlab_user = user_response.json()
