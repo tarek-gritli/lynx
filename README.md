@@ -88,6 +88,11 @@ docker-compose -f docker-compose.traefik.yml up -d
 
 Then deploy Lynx using Option 2 above.
 
+## Future Enhancements
+
+- **Non-blocking LLM Calls**: Migrate to async LLM clients to prevent concurrent requests from blocking threads
+- **Cost Calculation**: Add cost tracking and reporting for every code review
+
 ## Support
 
 - 🐞 **Issues**: [GitHub Issues](https://github.com/tarek-gritli/lynx/issues)
