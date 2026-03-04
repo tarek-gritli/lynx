@@ -1,8 +1,8 @@
 from typing import TypedDict
 
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 from google import genai
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from app.logging import get_logger
 from app.prompts import REVIEW_PROMPT
@@ -23,7 +23,7 @@ class ReviewResult(TypedDict):
     tokens: TokenUsage
 
 
-def get_review(
+async def get_review(
     diff: str, provider: str, model: str, api_key: str, template: str | None = None
 ) -> ReviewResult:
     """Call LLM to get code review based on the provided diff.
@@ -42,11 +42,11 @@ def get_review(
     result: ReviewResult | None = None
 
     if provider == "openai":
-        result = get_openai_review(prompt, model, api_key)
+        result = await get_openai_review(prompt, model, api_key)
     elif provider == "gemini":
-        result = get_gemini_review(prompt, model, api_key)
+        result = await get_gemini_review(prompt, model, api_key)
     elif provider == "anthropic":
-        result = get_anthropic_review(prompt, model, api_key)
+        result = await get_anthropic_review(prompt, model, api_key)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
@@ -57,11 +57,11 @@ def get_review(
     return result
 
 
-def get_openai_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
+async def get_openai_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
     """Get review from openai"""
     try:
-        client = OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
+        client = AsyncOpenAI(api_key=api_key)
+        response = await client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": "You are an expert code reviewer."},
@@ -85,11 +85,11 @@ def get_openai_review(prompt: str, model: str, api_key: str) -> ReviewResult | N
         raise RuntimeError(f"OpenAI request failed {e}") from e
 
 
-def get_gemini_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
+async def get_gemini_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
     """Get review from gemini"""
     try:
         client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
+        response = await client.aio.models.generate_content(
             model=model,
             contents=prompt,
         )
@@ -109,12 +109,12 @@ def get_gemini_review(prompt: str, model: str, api_key: str) -> ReviewResult | N
         raise RuntimeError(f"Gemini request failed {e}") from e
 
 
-def get_anthropic_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
+async def get_anthropic_review(prompt: str, model: str, api_key: str) -> ReviewResult | None:
     """Get review from Anthropic (Claude)"""
     try:
-        client = Anthropic(api_key=api_key)
+        client = AsyncAnthropic(api_key=api_key)
 
-        response = client.messages.create(
+        response = await client.messages.create(
             model=model, messages=[{"role": "user", "content": prompt}], max_tokens=1024
         )
 

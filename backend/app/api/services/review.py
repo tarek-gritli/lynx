@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict, Literal
 
 from github import PullRequest
@@ -21,8 +22,7 @@ from ..services.llm import get_review
 
 logger = get_logger(__name__)
 
-
-def perform_review(
+async def perform_review(
     repo_name: str,
     pr_number: int,
     user_id: int,
@@ -38,16 +38,16 @@ def perform_review(
     if platform == "github":
         if installation_id is None:
             raise ValueError("installation_id is required for GitHub reviews")
-        return _perform_github_review(
+        return await _perform_github_review(
             installation_id, repo_name, pr_number, user_id, db, pr_url
         )
     elif platform == "gitlab":
-        return _perform_gitlab_review(repo_name, pr_number, user_id, db, pr_url)
+        return await _perform_gitlab_review(repo_name, pr_number, user_id, db, pr_url)
     else:
         raise ValueError(f"Unsupported platform: {platform}")
 
 
-def _perform_github_review(
+async def _perform_github_review(
     installation_id: int,
     repo_name: str,
     pr_number: int,
@@ -83,7 +83,7 @@ def _perform_github_review(
         )
         return
 
-    reviews = _generate_reviews(
+    reviews = await _generate_reviews(
         api_keys, diff, user_id, repo_name, pr_number, pr_url, db
     )
     comment = _format_multi_review(reviews)
@@ -93,7 +93,7 @@ def _perform_github_review(
     return comment
 
 
-def _perform_gitlab_review(
+async def _perform_gitlab_review(
     repo_name: str,
     mr_iid: int,
     user_id: int,
@@ -134,7 +134,7 @@ def _perform_gitlab_review(
         )
         return
 
-    reviews = _generate_reviews(
+    reviews = await _generate_reviews(
         api_keys, diff, user_id, repo_name, mr_iid, pr_url, db
     )
     comment = _format_multi_review(reviews)
@@ -144,7 +144,7 @@ def _perform_gitlab_review(
     return comment
 
 
-def _generate_reviews(
+async def _generate_reviews(
     api_keys: list,
     diff: str,
     user_id: int,
@@ -154,7 +154,6 @@ def _generate_reviews(
     db: Session,
 ) -> list[dict]:
     """Generate reviews from all configured API keys and save to database"""
-    reviews = []
 
     default_template = (
         db.query(Template)
@@ -163,9 +162,8 @@ def _generate_reviews(
     )
     template_content = default_template.content if default_template else None
 
+    review_records = []
     for api_key in api_keys:
-        decrypted_api_key = decrypt_key(api_key.encrypted_key)
-
         review_record = Review(
             user_id=user_id,
             provider=api_key.provider,
@@ -176,14 +174,20 @@ def _generate_reviews(
             status="pending",
         )
         db.add(review_record)
-        db.commit()
+        review_records.append((api_key, review_record))
+
+    db.commit()
+    for api_key, review_record in review_records:
         db.refresh(review_record)
         logger.info(
             f"Pending review created in database for {api_key.provider} (id={review_record.id})"
         )
 
+    # Execute all LLM calls in parallel
+    async def process_single_review(api_key, review_record):
+        decrypted_api_key = decrypt_key(api_key.encrypted_key)
         try:
-            result = get_review(
+            result = await get_review(
                 diff=diff,
                 provider=api_key.provider,
                 model=api_key.model,
@@ -207,7 +211,7 @@ def _generate_reviews(
                 f"Review updated to success in database (tokens: {total_tokens}, provider: {api_key.provider})"
             )
 
-            reviews.append({"provider": api_key.provider, "review": result["review"]})
+            return {"provider": api_key.provider, "review": result["review"]}
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Review failed for {api_key.provider}: {error_msg}")
@@ -217,12 +221,15 @@ def _generate_reviews(
             db.commit()
             logger.info(f"Review updated to failed in database for {api_key.provider}")
 
-            reviews.append(
-                {
-                    "provider": api_key.provider,
-                    "review": "❌ Lynx review failed",
-                }
-            )
+            return {
+                "provider": api_key.provider,
+                "review": "❌ Lynx review failed",
+            }
+
+    reviews = await asyncio.gather(
+        *[process_single_review(api_key, review_record)
+          for api_key, review_record in review_records]
+    )
 
     return reviews
 

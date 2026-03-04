@@ -79,16 +79,18 @@ async def github_webhook(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        background_tasks.add_task(
-            perform_review,
-            repo_name=repo_name,
-            pr_number=pr_number,
-            user_id=user.id,
-            db=db,
-            platform="github",
-            installation_id=installation_id,
-            pr_url=pr_url,
-        )
+        async def run_review():
+            await perform_review(
+                repo_name=repo_name,
+                pr_number=pr_number,
+                user_id=user.id,
+                db=db,
+                platform="github",
+                installation_id=installation_id,
+                pr_url=pr_url,
+            )
+
+        background_tasks.add_task(run_review)
 
         return {"status": "queued for review"}
 
@@ -105,16 +107,18 @@ async def github_webhook(
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
 
-            background_tasks.add_task(
-                perform_review,
-                repo_name=repo_name,
-                pr_number=pr_number,
-                user_id=user.id,
-                db=db,
-                platform="github",
-                installation_id=installation_id,
-                pr_url=pr_url,
-            )
+            async def run_review():
+                await perform_review(
+                    repo_name=repo_name,
+                    pr_number=pr_number,
+                    user_id=user.id,
+                    db=db,
+                    platform="github",
+                    installation_id=installation_id,
+                    pr_url=pr_url,
+                )
+
+            background_tasks.add_task(run_review)
 
             return {"status": "queued for review"}
 
@@ -153,15 +157,17 @@ async def gitlab_webhook(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        background_tasks.add_task(
-            perform_review,
-            repo_name=repo_name,
-            pr_number=mr_number,
-            user_id=user.id,
-            db=db,
-            platform="gitlab",
-            pr_url=pr_url,
-        )
+        async def run_review():
+            await perform_review(
+                repo_name=repo_name,
+                pr_number=mr_number,
+                user_id=user.id,
+                db=db,
+                platform="gitlab",
+                pr_url=pr_url,
+            )
+
+        background_tasks.add_task(run_review)
 
         return {"status": "queued for review"}
 
@@ -181,15 +187,17 @@ async def gitlab_webhook(
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
 
-            background_tasks.add_task(
-                perform_review,
-                repo_name=repo_name,
-                pr_number=mr_number,
-                user_id=user.id,
-                db=db,
-                platform="gitlab",
-                pr_url=pr_url,
-            )
+            async def run_review():
+                await perform_review(
+                    repo_name=repo_name,
+                    pr_number=mr_number,
+                    user_id=user.id,
+                    db=db,
+                    platform="gitlab",
+                    pr_url=pr_url,
+                )
+
+            background_tasks.add_task(run_review)
 
             return {"status": "queued for review"}
 
