@@ -96,7 +96,7 @@ async def get_gemini_review(prompt: str, model: str, api_key: str) -> ReviewResu
         usage = response.usage_metadata if hasattr(response, "usage_metadata") else None
         tokens = {
             "prompt": usage.prompt_token_count if usage else None,
-            "completion": usage.completion_token_count if usage else None,
+            "completion": usage.candidates_token_count if usage else None,
             "total": usage.total_token_count if usage else None,
         }
         return {
