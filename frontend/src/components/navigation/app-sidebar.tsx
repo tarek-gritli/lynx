@@ -26,7 +26,7 @@ export default function AppSidebar({
 
 	return (
 		<Sidebar collapsible="offcanvas" {...props}>
-			<SidebarHeader>
+			<SidebarHeader className="py-1">
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>

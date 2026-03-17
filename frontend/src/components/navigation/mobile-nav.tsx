@@ -9,7 +9,7 @@ export default function MobileNavbar() {
 	const page = path.charAt(0).toUpperCase() + path.slice(1);
 
 	return (
-		<header className="sticky top-0 z-50 flex h-14 items-center gap-3 border-b px-4 md:hidden">
+		<div className="flex items-center gap-3 md:hidden">
 			<button
 				type="button"
 				onClick={toggleSidebar}
@@ -19,6 +19,6 @@ export default function MobileNavbar() {
 				<span className="sr-only">Toggle menu</span>
 			</button>
 			<span className="font-semibold">{page}</span>
-		</header>
+		</div>
 	);
 }

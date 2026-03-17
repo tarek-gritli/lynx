@@ -88,10 +88,6 @@ docker-compose -f docker-compose.traefik.yml up -d
 
 Then deploy Lynx using Option 2 above.
 
-## Future Enhancements
-
-- **In-App Notifications**: Real-time notifications for review completion, failures, and important events
-
 ## Support
 
 - 🐞 **Issues**: [GitHub Issues](https://github.com/tarek-gritli/lynx/issues)

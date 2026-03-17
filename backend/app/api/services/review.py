@@ -9,6 +9,7 @@ from app.logging import get_logger
 from app.models import APIKey, Review, Template, User
 from app.utils.crypto import decrypt_key
 from app.utils.cost import calculate_cost
+from app.api.services.notifications import notification_manager
 from app.utils.file_filter import should_skip_file
 
 from ..services.github import get_installation_client
@@ -216,6 +217,10 @@ async def _generate_reviews(
                 f"Review updated to success in database (tokens: {total_tokens}, cost: ${cost:.6f}, provider: {api_key.provider})"
             )
 
+            await notification_manager.publish(
+                user_id, "review_success", review_record.id, db
+            )
+
             return {"provider": api_key.provider, "review": result["review"]}
         except Exception as e:
             error_msg = str(e)
@@ -225,6 +230,10 @@ async def _generate_reviews(
             review_record.error_message = error_msg
             db.commit()
             logger.info(f"Review updated to failed in database for {api_key.provider}")
+
+            await notification_manager.publish(
+                user_id, "review_failed", review_record.id, db
+            )
 
             return {
                 "provider": api_key.provider,
