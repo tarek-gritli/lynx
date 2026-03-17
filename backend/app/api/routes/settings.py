@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, SessionDep
-from app.constants import PROVIDER_MODELS, Provider
-from app.models import APIKey
+from app.constants import Provider
+from app.models import APIKey, LLMModel
 from app.utils.crypto import encrypt_key
 
 from ..services.validation import validate_api_key
@@ -35,9 +35,18 @@ class BulkSetAPIKeysRequest(BaseModel):
     api_keys: list[SetAPIKeyRequest]
 
 
-def validate_model_for_provider(provider: Provider, model: str) -> bool:
+def validate_model_for_provider(provider: Provider, model: str, db) -> bool:
     """Check if the model is valid for the given provider"""
-    return model in PROVIDER_MODELS.get(provider, set())
+    return (
+        db.query(LLMModel)
+        .filter(
+            LLMModel.provider == provider,
+            LLMModel.name == model,
+            LLMModel.is_active == True,
+        )
+        .first()
+        is not None
+    )
 
 
 @router.post("/api-key")
@@ -46,8 +55,15 @@ def set_api_key(
     db: SessionDep,
     current_user: CurrentUser,
 ):
-    if not validate_model_for_provider(req.provider, req.model):
-        valid_models = ", ".join(sorted(PROVIDER_MODELS[req.provider]))
+    if not validate_model_for_provider(req.provider, req.model, db):
+        valid_models = ", ".join(
+            sorted(
+                m.name
+                for m in db.query(LLMModel)
+                .filter(LLMModel.provider == req.provider, LLMModel.is_active == True)
+                .all()
+            )
+        )
         raise HTTPException(
             status_code=400,
             detail=f"Invalid model '{req.model}' for provider '{req.provider}'. Valid models: {valid_models}",
@@ -141,14 +157,20 @@ def get_current_api_keys(
 
 
 @router.get("/models")
-def get_supported_models() -> list[ProviderModels]:
+def get_supported_models(db: SessionDep) -> list[ProviderModels]:
     """Get all supported models for each provider"""
-    result = []
+    models = (
+        db.query(LLMModel).filter(LLMModel.is_active == True).all()
+    )
 
-    for provider, models in PROVIDER_MODELS.items():
-        result.append(ProviderModels(provider=provider, models=sorted(models)))
+    grouped: dict[str, list[str]] = {}
+    for m in models:
+        grouped.setdefault(m.provider, []).append(m.name)
 
-    return result
+    return [
+        ProviderModels(provider=provider, models=sorted(names))
+        for provider, names in grouped.items()
+    ]
 
 
 @router.post("/api-keys/bulk")
@@ -163,8 +185,15 @@ def bulk_set_api_keys(
 
     for key_req in req.api_keys:
         try:
-            if not validate_model_for_provider(key_req.provider, key_req.model):
-                valid_models = ", ".join(sorted(PROVIDER_MODELS[key_req.provider]))
+            if not validate_model_for_provider(key_req.provider, key_req.model, db):
+                valid_models = ", ".join(
+                    sorted(
+                        m.name
+                        for m in db.query(LLMModel)
+                        .filter(LLMModel.provider == key_req.provider, LLMModel.is_active == True)
+                        .all()
+                    )
+                )
                 errors.append(
                     {
                         "provider": key_req.provider,

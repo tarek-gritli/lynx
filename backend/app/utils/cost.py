@@ -1,17 +1,21 @@
-from app.constants import MODEL_PRICING
+from sqlalchemy.orm import Session
+
+from app.models import LLMModel
 
 
-def calculate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
+def calculate_cost(
+    model: str, prompt_tokens: int, completion_tokens: int, db: Session
+) -> float:
     """Calculate the cost of a review in USD based on model pricing.
 
     Returns 0.0 if the model is not found in pricing data.
     """
-    pricing = MODEL_PRICING.get(model)
-    if not pricing:
+    llm_model = db.query(LLMModel).filter(LLMModel.name == model).first()
+    if not llm_model:
         return 0.0
 
-    input_cost_per_token = pricing[0] / 1_000_000
-    output_cost_per_token = pricing[1] / 1_000_000
+    input_cost_per_token = llm_model.input_cost_per_million / 1_000_000
+    output_cost_per_token = llm_model.output_cost_per_million / 1_000_000
 
     return round(
         prompt_tokens * input_cost_per_token

@@ -204,7 +204,7 @@ async def _generate_reviews(
             completion_tokens = tokens.get("completion") or 0
             total_tokens = tokens.get("total") or 0
 
-            cost = calculate_cost(api_key.model, prompt_tokens, completion_tokens)
+            cost = calculate_cost(api_key.model, prompt_tokens, completion_tokens, db)
 
             review_record.status = "success"
             review_record.prompt_tokens = prompt_tokens

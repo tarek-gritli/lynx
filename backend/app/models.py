@@ -103,6 +103,22 @@ class Review(Base):
     user = relationship("User")
 
 
+class LLMModel(Base):
+    __tablename__ = "llm_models"
+    __table_args__ = (
+        UniqueConstraint("provider", "name", name="uq_provider_model_name"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider = Column(String, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    input_cost_per_million = Column(Float, nullable=False)
+    output_cost_per_million = Column(Float, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class Notification(Base):
     __tablename__ = "notifications"
 
