@@ -4,7 +4,22 @@ from google import genai
 from openai import AuthenticationError as OpenAIAuthError
 from openai import OpenAI
 
+_validators: dict[str, callable] = {}
 
+print("Registered API key validators:", list(_validators.keys()))
+
+
+def key_validator(provider: str):
+    """Register a function as the API key validator for a provider."""
+
+    def decorator(fn):
+        _validators[provider] = fn
+        return fn
+
+    return decorator
+
+
+@key_validator("openai")
 def validate_openai_key(api_key: str) -> tuple[bool, str]:
     """Validate OpenAI API key by listing models"""
     try:
@@ -17,6 +32,7 @@ def validate_openai_key(api_key: str) -> tuple[bool, str]:
         return False, f"Validation failed: {str(e)}"
 
 
+@key_validator("gemini")
 def validate_gemini_key(api_key: str) -> tuple[bool, str]:
     """Validate Gemini API key by listing models"""
     try:
@@ -34,6 +50,7 @@ def validate_gemini_key(api_key: str) -> tuple[bool, str]:
         return False, f"Validation failed: {str(e)}"
 
 
+@key_validator("anthropic")
 def validate_claude_key(api_key: str) -> tuple[bool, str]:
     """Validate Claude API key by making a minimal request"""
     try:
@@ -59,11 +76,7 @@ def validate_claude_key(api_key: str) -> tuple[bool, str]:
 
 def validate_api_key(provider: str, api_key: str) -> tuple[bool, str]:
     """Validate API key for the given provider"""
-    if provider == "openai":
-        return validate_openai_key(api_key)
-    elif provider == "gemini":
-        return validate_gemini_key(api_key)
-    elif provider == "anthropic":
-        return validate_claude_key(api_key)
-    else:
+    validator = _validators.get(provider)
+    if validator is None:
         return False, "Unsupported provider"
+    return validator(api_key)
