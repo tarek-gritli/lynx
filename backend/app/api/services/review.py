@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.logging import get_logger
 from app.models import APIKey, Review, Template, User
 from app.utils.crypto import decrypt_key
+from app.utils.file_filter import should_skip_file
 
 from ..services.github import get_installation_client
 from ..services.gitlab import (
@@ -63,7 +64,7 @@ async def _perform_github_review(
     if not pr_url:
         pr_url = pr.html_url
 
-    diff = get_pr_diff(pr)
+    diff, skipped_files = get_pr_diff(pr)
 
     if not diff.strip():
         pr.create_issue_comment("⚠️ No changes detected in this PR.")
@@ -86,7 +87,7 @@ async def _perform_github_review(
     reviews = await _generate_reviews(
         api_keys, diff, user_id, repo_name, pr_number, pr_url, db
     )
-    comment = _format_multi_review(reviews)
+    comment = _format_multi_review(reviews, skipped_files)
 
     pr.create_issue_comment(comment)
 
@@ -113,7 +114,7 @@ async def _perform_gitlab_review(
     if not pr_url:
         pr_url = mr.web_url
 
-    diff = get_mr_diff(mr)
+    diff, skipped_files = get_mr_diff(mr)
 
     if not diff.strip():
         create_mr_note(mr, "⚠️ No changes detected in this MR.")
@@ -137,7 +138,7 @@ async def _perform_gitlab_review(
     reviews = await _generate_reviews(
         api_keys, diff, user_id, repo_name, mr_iid, pr_url, db
     )
-    comment = _format_multi_review(reviews)
+    comment = _format_multi_review(reviews, skipped_files)
 
     create_mr_note(mr, comment)
 
@@ -234,36 +235,49 @@ async def _generate_reviews(
     return reviews
 
 
-def get_pr_diff(pr: PullRequest) -> str:
-    """Extract diff from GitHub PR"""
+def get_pr_diff(pr: PullRequest) -> tuple[str, list[str]]:
+    """Extract diff from GitHub PR, skipping filtered files.
 
+    Returns a tuple of (diff_text, skipped_filenames).
+    """
     files = pr.get_files()
 
     diff_parts = []
+    skipped: list[str] = []
     for file in files:
+        if should_skip_file(file.filename):
+            skipped.append(file.filename)
+            logger.debug(f"Skipping file from review: {file.filename}")
+            continue
         if file.patch:
             diff_parts.append(f"### File: {file.filename}\n")
             diff_parts.append(f"```diff\n{file.patch}\n```\n")
-    return "\n".join(diff_parts)
+    return "\n".join(diff_parts), skipped
 
 
-def get_mr_diff(mr) -> str:
-    """Extract diff from GitLab MR"""
+def get_mr_diff(mr) -> tuple[str, list[str]]:
+    """Extract diff from GitLab MR, skipping filtered files.
 
+    Returns a tuple of (diff_text, skipped_filenames).
+    """
     changes = get_mr_changes(mr)
 
     diff_parts = []
+    skipped: list[str] = []
     for change in changes:
+        filepath = change.get("new_path", change.get("old_path", "unknown"))
+        if should_skip_file(filepath):
+            skipped.append(filepath)
+            logger.debug(f"Skipping file from review: {filepath}")
+            continue
         diff = change.get("diff", "")
         if diff:
-            diff_parts.append(
-                f"### File: {change.get('new_path', change.get('old_path', 'unknown'))}\n"
-            )
+            diff_parts.append(f"### File: {filepath}\n")
             diff_parts.append(f"```diff\n{diff}\n```\n")
-    return "\n".join(diff_parts)
+    return "\n".join(diff_parts), skipped
 
 
-def _format_multi_review(reviews: list[dict]) -> str:
+def _format_multi_review(reviews: list[dict], skipped_files: list[str] | None = None) -> str:
 
     header = "# 🔍 Lynx Review\n\n"
 
@@ -278,4 +292,12 @@ def _format_multi_review(reviews: list[dict]) -> str:
 
     body = "\n\n---\n\n".join(sections)
 
-    return f"{header}{body}\n\n---\n*Powered by Lynx AI Code Review*"
+    skipped_section = ""
+    if skipped_files:
+        file_list = "\n".join(f"- `{f}`" for f in skipped_files)
+        skipped_section = (
+            f"\n\n<details>\n<summary>📁 {len(skipped_files)} file(s) skipped "
+            f"(lock files, generated/binary files)</summary>\n\n{file_list}\n\n</details>"
+        )
+
+    return f"{header}{body}{skipped_section}\n\n---\n*Powered by Lynx AI Code Review*"

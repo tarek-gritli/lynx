@@ -90,7 +90,6 @@ Then deploy Lynx using Option 2 above.
 
 ## Future Enhancements
 
-- **File Filtering**: Skip auto-generated files, lock files, and binary files from reviews to reduce noise and costs
 - **Cost Calculation**: Add cost tracking and reporting for every code review
 - **In-App Notifications**: Real-time notifications for review completion, failures, and important events
 
