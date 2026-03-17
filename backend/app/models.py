@@ -2,6 +2,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -93,6 +94,7 @@ class Review(Base):
     prompt_tokens = Column(Integer, default=0)
     completion_tokens = Column(Integer, default=0)
     total_tokens = Column(Integer, default=0)
+    cost = Column(Float, default=0.0)
 
     review_text = Column(Text, nullable=True)
 

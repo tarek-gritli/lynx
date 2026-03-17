@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.logging import get_logger
 from app.models import APIKey, Review, Template, User
 from app.utils.crypto import decrypt_key
+from app.utils.cost import calculate_cost
 from app.utils.file_filter import should_skip_file
 
 from ..services.github import get_installation_client
@@ -202,14 +203,17 @@ async def _generate_reviews(
             completion_tokens = tokens.get("completion") or 0
             total_tokens = tokens.get("total") or 0
 
+            cost = calculate_cost(api_key.model, prompt_tokens, completion_tokens)
+
             review_record.status = "success"
             review_record.prompt_tokens = prompt_tokens
             review_record.completion_tokens = completion_tokens
             review_record.total_tokens = total_tokens
+            review_record.cost = cost
             review_record.review_text = result["review"]
             db.commit()
             logger.info(
-                f"Review updated to success in database (tokens: {total_tokens}, provider: {api_key.provider})"
+                f"Review updated to success in database (tokens: {total_tokens}, cost: ${cost:.6f}, provider: {api_key.provider})"
             )
 
             return {"provider": api_key.provider, "review": result["review"]}

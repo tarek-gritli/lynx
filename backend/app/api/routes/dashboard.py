@@ -157,6 +157,13 @@ def get_stats(
         .scalar()
         or 0
     )
+    total_cost = (
+        db.query(Review)
+        .filter(Review.user_id == current_user.id)
+        .with_entities(func.sum(Review.cost))
+        .scalar()
+        or 0.0
+    )
     
     now = datetime.now(timezone.utc)
     start_current = now - timedelta(days=window_days)
@@ -181,6 +188,18 @@ def get_stats(
             or 0
         )
 
+    def sum_cost_in_range(start, end):
+        return (
+            db.query(func.sum(Review.cost))
+            .filter(
+                Review.user_id == current_user.id,
+                Review.created_at >= start,
+                Review.created_at < end,
+            )
+            .scalar()
+            or 0.0
+        )
+
     curr_total_reviews = count_in_range(base, start_current, end_current)
     curr_successful_reviews = count_in_range(
         base.filter(Review.status == "success"), start_current, end_current
@@ -189,6 +208,7 @@ def get_stats(
         base.filter(Review.status == "failed"), start_current, end_current
     )
     curr_total_tokens = sum_tokens_in_range(start_current, end_current)
+    curr_total_cost = sum_cost_in_range(start_current, end_current)
 
     prev_total_reviews = count_in_range(base, start_prev, end_prev)
     prev_successful_reviews = count_in_range(
@@ -198,6 +218,7 @@ def get_stats(
         base.filter(Review.status == "failed"), start_prev, end_prev
     )
     prev_total_tokens = sum_tokens_in_range(start_prev, end_prev)
+    prev_total_cost = sum_cost_in_range(start_prev, end_prev)
 
     def compute_change(curr: int, prev: int):
         if prev <= 0 and curr <= 0:
@@ -216,11 +237,13 @@ def get_stats(
         ),
         "failed_reviews": compute_change(curr_failed_reviews, prev_failed_reviews),
         "total_tokens": compute_change(curr_total_tokens, prev_total_tokens),
+        "total_cost": compute_change(curr_total_cost, prev_total_cost),
     }
 
     return {
         "total_reviews": total_reviews,
         "total_tokens": total_tokens,
+        "total_cost": round(total_cost, 6),
         "successful_reviews": successful_reviews,
         "failed_reviews": failed_reviews,
         "period": {
@@ -237,12 +260,14 @@ def get_stats(
                 "successful_reviews": curr_successful_reviews,
                 "failed_reviews": curr_failed_reviews,
                 "total_tokens": curr_total_tokens,
+                "total_cost": round(curr_total_cost, 6),
             },
             "previous": {
                 "total_reviews": prev_total_reviews,
                 "successful_reviews": prev_successful_reviews,
                 "failed_reviews": prev_failed_reviews,
                 "total_tokens": prev_total_tokens,
+                "total_cost": round(prev_total_cost, 6),
             },
         },
         "changes": changes,
