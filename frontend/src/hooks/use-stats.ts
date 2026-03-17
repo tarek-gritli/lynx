@@ -7,6 +7,7 @@ interface StatsResponse {
 	failed_reviews: number;
 	pending_reviews: number;
 	total_tokens: number;
+	total_cost: number;
 	period: {
 		window_days: number;
 		current: { start: string; end: string };
@@ -18,12 +19,14 @@ interface StatsResponse {
 			successful_reviews: number;
 			failed_reviews: number;
 			total_tokens: number;
+			total_cost: number;
 		};
 		previous: {
 			total_reviews: number;
 			successful_reviews: number;
 			failed_reviews: number;
 			total_tokens: number;
+			total_cost: number;
 		};
 	};
 	changes: {
@@ -31,6 +34,7 @@ interface StatsResponse {
 		successful_reviews: { percent: number; direction: "up" | "down" };
 		failed_reviews: { percent: number; direction: "up" | "down" };
 		total_tokens: { percent: number; direction: "up" | "down" };
+		total_cost: { percent: number; direction: "up" | "down" };
 	};
 }
 
@@ -56,6 +60,7 @@ export function useStats() {
 		failedReviews: stats?.failed_reviews || 0,
 		pendingReviews: stats?.pending_reviews || 0,
 		totalTokens: stats?.total_tokens || 0,
+		totalCost: stats?.total_cost || 0,
 		changes: {
 			totalReviews: stats?.changes.total_reviews || {
 				percent: 0,
@@ -70,6 +75,10 @@ export function useStats() {
 				direction: "up",
 			},
 			totalTokens: stats?.changes.total_tokens || {
+				percent: 0,
+				direction: "up",
+			},
+			totalCost: stats?.changes.total_cost || {
 				percent: 0,
 				direction: "up",
 			},

@@ -90,7 +90,6 @@ Then deploy Lynx using Option 2 above.
 
 ## Future Enhancements
 
-- **Cost Calculation**: Add cost tracking and reporting for every code review
 - **In-App Notifications**: Real-time notifications for review completion, failures, and important events
 
 ## Support

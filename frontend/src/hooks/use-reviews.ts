@@ -16,6 +16,7 @@ export interface Review {
 	prompt_tokens: number;
 	completion_tokens: number;
 	total_tokens: number;
+	cost: number;
 	review_text: string | null;
 	created_at: string;
 }

@@ -4,6 +4,7 @@ import {
 	ChartColumnIncreasing,
 	CircleCheck,
 	CircleX,
+	DollarSign,
 	Search,
 } from "lucide-react";
 import { useState } from "react";
@@ -50,6 +51,15 @@ function RouteComponent() {
 			change: stats.changes.totalTokens,
 		},
 		{
+			title: "Total Cost",
+			icon: DollarSign,
+			iconClass: "text-success",
+			value: stats.totalCost,
+			formattedValue: `$${stats.totalCost.toFixed(2)}`,
+			change: stats.changes.totalCost,
+			inverted: true,
+		},
+		{
 			title: "Failed Reviews",
 			icon: CircleX,
 			iconClass: "text-destructive",
@@ -77,9 +87,10 @@ function RouteComponent() {
 					</p>
 				</div>
 			</header>
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
 				{statsLoading ? (
 					<>
+						<KPISkeleton />
 						<KPISkeleton />
 						<KPISkeleton />
 						<KPISkeleton />
@@ -93,6 +104,7 @@ function RouteComponent() {
 							icon={card.icon}
 							iconClass={card.iconClass}
 							value={card.value}
+							formattedValue={card.formattedValue}
 							change={card.change}
 							inverted={card.inverted}
 						/>

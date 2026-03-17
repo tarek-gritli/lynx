@@ -6,20 +6,21 @@ export default function KPICard(props: {
 	icon: LucideIcon;
 	iconClass: string;
 	value: number;
+	formattedValue?: string;
 	change: { percent: number; direction: "up" | "down" };
 	inverted?: boolean;
 }) {
 	return (
-		<div className="p-6 rounded-xl border border-primary/20">
-			<div className="flex items-center justify-between mb-2">
-				<p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+		<div className="p-3 sm:p-4 lg:p-6 rounded-xl border border-primary/20 min-w-0">
+			<div className="flex items-center justify-between mb-1 sm:mb-2">
+				<p className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider truncate mr-1">
 					{props.title}
 				</p>
-				<props.icon className={props.iconClass} />
+				<props.icon className={cn(props.iconClass, "size-4 sm:size-5 shrink-0")} />
 			</div>
-			<div className="flex items-baseline gap-2">
-				<h3 className="text-3xl font-bold tracking-tight">
-					{formatNumber(props.value)}
+			<div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
+				<h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">
+					{props.formattedValue ?? formatNumber(props.value)}
 				</h3>
 				{props.change && (
 					<span

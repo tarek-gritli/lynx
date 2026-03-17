@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Calendar, Cpu, Zap } from "lucide-react";
+import { Calendar, Cpu, DollarSign, Zap } from "lucide-react";
 import type { Review } from "@/hooks/use-reviews";
 
 interface ReviewMetadataProps {
@@ -8,7 +8,7 @@ interface ReviewMetadataProps {
 
 export function ReviewMetadata({ review }: ReviewMetadataProps) {
 	return (
-		<section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+		<section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
 			<article className="bg-card border border-border rounded-xl p-4">
 				<div className="flex items-center gap-3 mb-2">
 					<Cpu className="size-5 text-primary" />
@@ -36,6 +36,19 @@ export function ReviewMetadata({ review }: ReviewMetadataProps) {
 					Prompt: {review.prompt_tokens.toLocaleString()} • Completion:{" "}
 					{review.completion_tokens.toLocaleString()}
 				</p>
+			</article>
+
+			<article className="bg-card border border-border rounded-xl p-4">
+				<div className="flex items-center gap-3 mb-2">
+					<DollarSign className="size-5 text-success" />
+					<h2 className="font-semibold text-sm text-muted-foreground uppercase">
+						Cost
+					</h2>
+				</div>
+				<p className="text-lg font-bold">
+					${review.cost.toFixed(4)}
+				</p>
+				<p className="text-sm text-muted-foreground mt-1">USD</p>
 			</article>
 
 			<article className="bg-card border border-border rounded-xl p-4">
